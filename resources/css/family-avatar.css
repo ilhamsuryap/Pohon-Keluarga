@@ -1,0 +1,60 @@
+/* Avatar styles */
+.family-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    overflow: hidden;
+    background-color: #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.family-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.family-avatar.male {
+    border: 3px solid #93c5fd; /* blue-300 */
+}
+
+.family-avatar.female {
+    border: 3px solid #f9a8d4; /* pink-300 */
+}
+
+.family-avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f3f4f6;
+    color: #9ca3af;
+}
+
+.family-member-card {
+    transition: all 0.3s ease;
+}
+
+.family-member-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+.status-badge {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: #22c55e; /* green-500 */
+    border: 2px solid white;
+}
+
+.status-badge.deceased {
+    background-color: #6b7280; /* gray-500 */
+}
