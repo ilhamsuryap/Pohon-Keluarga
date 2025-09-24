@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -28,8 +29,16 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        if (auth()->user()->isAdmin()) {
+        /** @var User|null $user */
+        $user = Auth::user();
+
+        if ($user && $user->isAdmin()) {
             return redirect()->intended(route('admin.dashboard'));
+        }
+
+        // Redirect users who are still pending payment approval
+        if ($user && method_exists($user, 'isPendingPaymentApproval') && $user->isPendingPaymentApproval()) {
+            return redirect()->route('pending-approval');
         }
 
         return redirect()->intended('/');

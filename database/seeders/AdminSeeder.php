@@ -14,21 +14,21 @@ class AdminSeeder extends Seeder
      */
     public function run(): void
     {
-        // Create admin user
-        User::create([
-            'name' => 'Administrator',
-            'email' => 'admin@pohonkeluarga.com',
-            'password' => Hash::make('admin123'),
-            'role' => 'admin',
-            'is_approved' => true,
-            'payment_status' => 'paid',
-            'phone' => '081234567890',
-        ]);
+        // // Create admin user
+        // User::create([
+        //     'name' => 'Administrator',
+        //     'email' => 'admin@pohonkeluarga.com',
+        //     'password' => Hash::make('admin123'),
+        //     'role' => 'admin',
+        //     'is_approved' => true,
+        //     'payment_status' => 'paid',
+        //     'phone' => '081234567890',
+        // ]);
 
-        // Create default payment setting
-        PaymentSetting::create([
-            'registration_fee' => 50000,
-            'is_active' => true,
-        ]);
+        // // Create default payment setting
+        // PaymentSetting::create([
+        //     'registration_fee' => 50000,
+        //     'is_active' => true,
+        // ]);
     }
 }
