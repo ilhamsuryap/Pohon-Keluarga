@@ -44,6 +44,9 @@
                             <x-nav-link :href="route('user.family.index')" :active="request()->routeIs('user.family.*')" class="flex items-center">
                                 {{ __('Diagram Silsilah') }}
                             </x-nav-link>
+                            <x-nav-link :href="route('user.family.tree')" :active="request()->routeIs('user.family.tree')" class="flex items-center">
+                                {{ __('Pohon Keluarga') }}
+                            </x-nav-link>
                         @else
                             <x-nav-link :href="route('pending-approval')" :active="request()->routeIs('pending-approval')">
                                 {{ __('Menunggu Persetujuan') }}
@@ -130,6 +133,9 @@
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('user.family.index')" :active="request()->routeIs('user.family.*')" class="flex items-center">
                         {{ __('Diagram') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('user.family.tree')" :active="request()->routeIs('user.family.tree')" class="flex items-center">
+                        {{ __('Pohon Keluarga') }}
                     </x-responsive-nav-link>
                 @else
                     <x-responsive-nav-link :href="route('pending-approval')" :active="request()->routeIs('pending-approval')">

@@ -81,7 +81,9 @@ class FamilyController extends Controller
 
         $request->validate([
             'name' => 'required|string|max:255',
-            'nik' => 'nullable|string|size:16|unique:family_members,nik',
+            // Allow same NIK across different families (to enable merging),
+            // but prevent duplicate NIK within the same family
+            'nik' => 'nullable|string|size:16|unique:family_members,nik,NULL,id,family_id,' . $family->id,
             'gender' => 'required|in:male,female',
             'relation' => 'required|in:father,mother,child',
             'birth_date' => 'required|date',
@@ -112,6 +114,16 @@ class FamilyController extends Controller
         $photoPath = null;
         if ($request->hasFile('photo')) {
             $photoPath = $request->file('photo')->store('family_photos', 'public');
+        }
+
+        // Optional info: if this NIK exists in other family, inform user that trees will be connected
+        if ($request->filled('nik')) {
+            $existsInOtherFamily = FamilyMember::where('nik', $request->nik)
+                ->where('family_id', '<>', $family->id)
+                ->exists();
+            if ($existsInOtherFamily) {
+                session()->flash('info', 'NIK yang sama ditemukan di keluarga lain. Pohon akan terhubung secara otomatis.');
+            }
         }
 
         // Create the new family member

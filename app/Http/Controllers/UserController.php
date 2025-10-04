@@ -7,6 +7,7 @@ use App\Models\FamilyMember;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use App\Services\FamilyTreeService;
 
 class UserController extends Controller
 {
@@ -19,7 +20,7 @@ class UserController extends Controller
     public function dashboard()
     {
         $user = Auth::user();
-        $families = $user->families()->with('members')->get();
+        $families = Family::where('user_id', $user->id)->with('members')->get();
         $totalMembers = $families->sum(function($family) {
             return $family->members->count();
         });
@@ -35,14 +36,14 @@ class UserController extends Controller
     public function familyIndex()
     {
         $user = Auth::user();
-        $families = $user->families()->withCount('members')->get();
+        $families = Family::where('user_id', $user->id)->withCount('members')->get();
         return view('user.family.index', compact('families'));
     }
 
     public function familyCreate()
     {
         $user = Auth::user();
-        if ($user->families()->exists()) {
+        if (Family::where('user_id', $user->id)->exists()) {
             return redirect()->route('user.family.index')
                            ->with('error', 'Anda hanya dapat membuat satu keluarga.');
         }
@@ -52,7 +53,7 @@ class UserController extends Controller
     public function familyStore(Request $request)
     {
         $user = Auth::user();
-        if ($user->families()->exists()) {
+        if (Family::where('user_id', $user->id)->exists()) {
             return redirect()->route('user.family.index')
                            ->with('error', 'Anda hanya dapat membuat satu keluarga.');
         }
@@ -62,7 +63,7 @@ class UserController extends Controller
             'description' => 'nullable|string',
         ]);
 
-        $family = $user->families()->create($validated);
+        $family = Family::create(array_merge($validated, ['user_id' => $user->id]));
         return redirect()->route('user.family.show', $family)
                         ->with('success', 'Keluarga berhasil dibuat.');
     }
@@ -72,6 +73,22 @@ class UserController extends Controller
         $this->authorize('view', $family);
         $familyMembers = $family->members()->get();
         return view('user.family.show', compact('family', 'familyMembers'));
+    }
+
+    public function familyTree(Request $request, FamilyTreeService $familyTreeService)
+    {
+        $user = Auth::user();
+        $family = Family::where('user_id', $user->id)->with('members')->first();
+
+        if (!$family) {
+            return redirect()->route('user.family.index')->with('error', 'Anda belum memiliki keluarga.');
+        }
+
+        // Build recursive tree by NIK linking across families
+        $tree = $familyTreeService->buildFamilyTree($family->id);
+        $treeJson = json_encode($tree, JSON_UNESCAPED_UNICODE);
+
+        return view('dashboard.family-tree', compact('family', 'treeJson'));
     }
 
     public function familyEdit(Family $family)

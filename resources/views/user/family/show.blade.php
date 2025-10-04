@@ -52,6 +52,26 @@
                 </div>
             @endif
 
+            @if ($errors->any())
+                <div class="bg-red-50 border border-red-200 rounded-2xl p-4 mb-8">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.257 3.099c.366-.446 1.12-.173 1.12.383v7.036c0 .556-.754.829-1.12.383L5.46 8.383a1 1 0 010-1.266l2.797-3.018z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-red-800">Terjadi kesalahan input.</p>
+                            <ul class="mt-2 text-sm text-red-700 list-disc list-inside">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
             @if (session('error'))
                 <div class="bg-red-50 border border-red-200 rounded-2xl p-4 mb-8">
                     <div class="flex">
@@ -673,18 +693,24 @@
                             <div>
                                 <label for="add_name" class="block text-sm font-semibold text-gray-700 mb-2">Nama
                                     Lengkap</label>
-                                <input type="text" name="name" id="add_name" required
+                                <input type="text" name="name" id="add_name" required value="{{ old('name') }}"
                                     class="form-input w-full px-4 py-3 text-gray-900 placeholder-gray-500">
+                                @error('name')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
                             </div>
 
                             <div>
                                 <label for="add_nik" class="block text-sm font-semibold text-gray-700 mb-2">NIK (Nomor
                                     Induk Kependudukan)</label>
-                                <input type="text" name="nik" id="add_nik" maxlength="16" pattern="[0-9]{16}"
+                                <input type="text" name="nik" id="add_nik" maxlength="16" pattern="[0-9]{16}" value="{{ old('nik') }}"
                                     class="form-input w-full px-4 py-3 text-gray-900 placeholder-gray-500"
                                     placeholder="Masukkan 16 digit NIK">
                                 <p class="mt-1 text-sm text-gray-500">NIK digunakan untuk menghubungkan anggota keluarga
                                     secara otomatis</p>
+                                @error('nik')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
                             </div>
 
                             <div>
@@ -693,10 +719,13 @@
                                 <select name="relation" id="add_relation" required
                                     class="form-input w-full px-4 py-3 text-gray-900">
                                     <option value="">Pilih Hubungan</option>
-                                    <option value="father">Ayah</option>
-                                    <option value="mother">Ibu</option>
-                                    <option value="child">Anak</option>
+                                    <option value="father" {{ old('relation')=='father' ? 'selected' : '' }}>Ayah</option>
+                                    <option value="mother" {{ old('relation')=='mother' ? 'selected' : '' }}>Ibu</option>
+                                    <option value="child" {{ old('relation')=='child' ? 'selected' : '' }}>Anak</option>
                                 </select>
+                                @error('relation')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
                             </div>
 
                             <div>
@@ -705,16 +734,22 @@
                                 <select name="gender" id="add_gender" required
                                     class="form-input w-full px-4 py-3 text-gray-900">
                                     <option value="">Pilih Jenis Kelamin</option>
-                                    <option value="male">Laki-laki</option>
-                                    <option value="female">Perempuan</option>
+                                    <option value="male" {{ old('gender')=='male' ? 'selected' : '' }}>Laki-laki</option>
+                                    <option value="female" {{ old('gender')=='female' ? 'selected' : '' }}>Perempuan</option>
                                 </select>
+                                @error('gender')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
                             </div>
 
                             <div>
                                 <label for="add_birth_date" class="block text-sm font-semibold text-gray-700 mb-2">Tanggal
                                     Lahir</label>
-                                <input type="date" name="birth_date" id="add_birth_date" required
+                                <input type="date" name="birth_date" id="add_birth_date" required value="{{ old('birth_date') }}"
                                     class="form-input w-full px-4 py-3 text-gray-900">
+                                @error('birth_date')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
                             </div>
 
                             <div>
@@ -722,7 +757,10 @@
                                     class="block text-sm font-semibold text-gray-700 mb-2">Deskripsi</label>
                                 <textarea name="description" id="add_description" rows="3"
                                     class="form-input w-full px-4 py-3 text-gray-900 placeholder-gray-500"
-                                    placeholder="Ceritakan tentang anggota keluarga ini..."></textarea>
+                                    placeholder="Ceritakan tentang anggota keluarga ini...">{{ old('description') }}</textarea>
+                                @error('description')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
                             </div>
 
                             <div>

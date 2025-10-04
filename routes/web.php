@@ -29,7 +29,7 @@ Route::get('/test-whatsapp/{phone}/{message}', function($phone, $message, WhatsA
 
 // Dashboard route with role-based redirection
 Route::middleware(['auth', 'verified'])->get('/dashboard', function () {
-    $user = auth()->user();
+    $user = \Illuminate\Support\Facades\Auth::user();
 
     if ($user->isAdmin()) {
         return redirect()->route('admin.dashboard');
@@ -89,6 +89,9 @@ Route::middleware(['auth', 'approved'])
         // NIK-based Family Connection Routes
         Route::get('/family/{family}/members/{member}/suggestions', [FamilyController::class, 'getFamilySuggestions'])->name('family.members.suggestions');
         Route::post('/family/{family}/members/{member}/connect', [FamilyController::class, 'connectFamily'])->name('family.members.connect');
+
+        // Pohon Keluarga (Tree) Route
+        Route::get('/family-tree', [UserController::class, 'familyTree'])->name('family.tree');
     });
 
 // ----------------------
