@@ -60,53 +60,179 @@ class FamilyTreeService
      */
     public function buildFamilyTree(int $familyId): array
     {
-        $visited = [];
-        $node = $this->buildFamilyNodeFromFamily($familyId, $visited);
-        return $node ?: ['name' => "Keluarga $familyId", 'spouse' => null, 'children' => []];
+        // 1) Kumpulkan semua keluarga yang terhubung transitif berdasarkan NIK
+        $connectedFamilyIds = $this->collectConnectedFamilyIds($familyId);
+        $members = FamilyMember::whereIn('family_id', $connectedFamilyIds)->get([
+            'id','family_id','name','nik','gender','birth_date','death_date','relation'
+        ]);
+
+        if ($members->isEmpty()) {
+            return ['name' => "Keluarga $familyId", 'spouse' => null, 'children' => []];
+        }
+
+        // 2) Group per keluarga dan petakan ayah/ibu/anak (gunakan field 'relation', bukan 'role')
+        $byFamily = $members->groupBy('family_id');
+        $familyInfo = [];
+        foreach ($byFamily as $fid => $list) {
+            $father = $list->firstWhere('relation', 'father');
+            $mother = $list->firstWhere('relation', 'mother');
+            $children = $list->where('relation', 'child')->values();
+            $familyInfo[$fid] = compact('father', 'mother', 'children');
+        }
+
+        // 3) Index NIK -> anggota (untuk memetakan hubungan antar keluarga)
+        $nikIndex = $members->filter(fn ($m) => !empty($m->nik))->groupBy('nik');
+
+        // 4) Bangun graf antar-keluarga: parentFamily -> childFamily
+        //    Jika seorang anak di family P punya NIK yang sama dengan ayah/ibu di family C,
+        //    maka edge P -> C (P adalah leluhur dari C)
+        $edges = [];
+        $incoming = [];
+        foreach ($connectedFamilyIds as $fid) { $incoming[$fid] = 0; }
+
+        foreach ($familyInfo as $fid => $info) {
+            foreach (['father', 'mother'] as $role) {
+                $p = $info[$role] ?? null;
+                if ($p && $p->nik) {
+                    $sameNikMembers = $nikIndex->get($p->nik) ?? collect();
+                    foreach ($sameNikMembers as $m) {
+                        if ($m->family_id !== $fid && $m->relation === 'child') {
+                            $parentFamilyId = $m->family_id; // keluarga tempat orang ini menjadi anak
+                            $edges[$parentFamilyId][$fid] = true; // parent -> current
+                            $incoming[$fid] = ($incoming[$fid] ?? 0) + 1;
+                            $incoming[$parentFamilyId] = $incoming[$parentFamilyId] ?? 0;
+                        }
+                    }
+                }
+            }
+        }
+
+        // 5) Temukan akar (keluarga tanpa incoming edge). Jika tidak ada, fallback ke familyId
+        $roots = collect($connectedFamilyIds)
+            ->filter(fn ($fid) => ($incoming[$fid] ?? 0) === 0)
+            ->values()
+            ->all();
+        if (empty($roots)) { $roots = [$familyId]; }
+
+        // 6) DFS membangun subtree dari setiap root, menyatukan pasangan sebagai satu node
+        $visitedFamilies = [];
+        $buildSubtree = function (int $fid) use (&$buildSubtree, &$visitedFamilies, $familyInfo, $edges) {
+            if (in_array($fid, $visitedFamilies, true)) { return null; }
+            $visitedFamilies[] = $fid;
+
+            $info = $familyInfo[$fid] ?? ['father' => null, 'mother' => null, 'children' => collect()];
+            $father = $info['father'];
+            $mother = $info['mother'];
+
+            // Pilih nama utama + spouse
+            $primary = $father ?: $mother;
+            $primaryName = $primary ? $primary->name : ("Keluarga $fid");
+            $spouseName = null;
+            if ($father && $mother) {
+                // tampilkan pasangan sebagai satu node
+                $spouseName = $primary === $father ? $mother->name : $father->name;
+            }
+
+            // Petakan anak yang "naik kelas" menjadi orang tua di keluarga lain
+            $childFamilies = array_keys($edges[$fid] ?? []);
+            $childNikToFamily = [];
+            foreach ($childFamilies as $cfid) {
+                $childInfo = $familyInfo[$cfid] ?? null;
+                if (!$childInfo) { continue; }
+                foreach (['father', 'mother'] as $role) {
+                    $p = $childInfo[$role] ?? null;
+                    if ($p && $p->nik) {
+                        $childNikToFamily[$p->nik] = $cfid;
+                    }
+                }
+            }
+
+            // Bangun anak: jika anak punya family lanjutan, render sebagai couple-node (anak + pasangannya)
+            $childrenNodes = [];
+            foreach (($info['children'] ?? collect()) as $child) {
+                $nextFamilyId = ($child->nik && isset($childNikToFamily[$child->nik])) ? $childNikToFamily[$child->nik] : null;
+                if ($nextFamilyId) {
+                    $sub = $buildSubtree($nextFamilyId);
+                    if ($sub) {
+                        $childrenNodes[] = [
+                            'name' => $child->name,
+                            'spouse' => $sub['spouse'] ?? null,
+                            'children' => $sub['children'] ?? [],
+                            'birth_date' => optional($child->birth_date)->format('Y-m-d'),
+                        ];
+                        continue;
+                    }
+                }
+                // leaf
+                $childrenNodes[] = [
+                    'name' => $child->name,
+                    'spouse' => null,
+                    'children' => [],
+                    'birth_date' => optional($child->birth_date)->format('Y-m-d'),
+                ];
+            }
+
+            // Urutkan anak dari yang tertua (tanggal lebih awal) ke termuda, null di akhir
+            usort($childrenNodes, function ($a, $b) {
+                $ad = $a['birth_date'] ?? null; $bd = $b['birth_date'] ?? null;
+                if ($ad === $bd) return 0;
+                if ($ad === null) return 1;
+                if ($bd === null) return -1;
+                return strcmp($ad, $bd);
+            });
+
+            // Hapus birth_date dari output final (tidak dipakai di view)
+            foreach ($childrenNodes as &$cn) { unset($cn['birth_date']); }
+            unset($cn);
+
+            return [
+                'name' => $primaryName,
+                'spouse' => $spouseName,
+                'children' => $childrenNodes,
+            ];
+        };
+
+        $forest = [];
+        foreach ($roots as $r) {
+            $sub = $buildSubtree($r);
+            if ($sub) { $forest[] = $sub; }
+        }
+
+        // Jika hanya satu root, kembalikan langsung; jika banyak, bungkus agar D3 tetap bisa render
+        if (count($forest) === 1) { return $forest[0]; }
+        return [ 'name' => 'Keluarga', 'spouse' => null, 'children' => $forest ];
     }
 
     private function buildFamilyNodeFromFamily(int $familyId, array &$visited): ?array
     {
-        if (in_array($familyId, $visited)) {
-            // already processed this family in the current traversal => prevent cycles
-            return null;
-        }
+        // Metode lama tidak lagi dipakai oleh buildFamilyTree; dipertahankan untuk kompatibilitas.
+        if (in_array($familyId, $visited)) { return null; }
         $visited[] = $familyId;
 
         $members = FamilyMember::where('family_id', $familyId)->get();
-        if ($members->isEmpty()) {
-            return null;
-        }
+        if ($members->isEmpty()) { return null; }
 
-        $father = $members->firstWhere('role', 'father');
-        $mother = $members->firstWhere('role', 'mother');
+        $father = $members->firstWhere('relation', 'father');
+        $mother = $members->firstWhere('relation', 'mother');
 
-        // choose primary (prefer father, else mother)
         $primary = $father ?? $mother;
         $primaryName = $primary->name ?? ("Keluarga $familyId");
         $spouseName = null;
-        if ($primary) {
-            if ($primary->relation === 'father') {
-                $spouseName = $mother ? $mother->name : null;
-            } else {
-                $spouseName = $father ? $father->name : null;
-            }
+        if ($father && $mother) {
+            $spouseName = $primary === $father ? $mother->name : $father->name;
         }
 
-        $childrenList = $members->where('role', 'child');
+        $childrenList = $members->where('relation', 'child');
         $children = [];
 
         foreach ($childrenList as $child) {
-            // find other families where this child is a parent (by NIK)
             $otherParentFamilies = FamilyMember::where('nik', $child->nik)
                 ->where('family_id', '<>', $familyId)
-                ->whereIn('role', ['father', 'mother'])
+                ->whereIn('relation', ['father', 'mother'])
                 ->pluck('family_id')
                 ->unique();
 
             if ($otherParentFamilies->isNotEmpty()) {
-                // attach subtree(s) for each other family
-                // If multiple, merge them as separate spouse/children entries under this child
                 foreach ($otherParentFamilies as $ofId) {
                     $subNode = $this->buildFamilyNodeFromFamily($ofId, $visited);
                     if ($subNode) {
@@ -116,7 +242,6 @@ class FamilyTreeService
                             'children' => $subNode['children'] ?? [],
                         ];
                     } else {
-                        // already visited or empty: attach as leaf
                         $children[] = [
                             'name' => $child->name,
                             'spouse' => null,
@@ -125,7 +250,6 @@ class FamilyTreeService
                     }
                 }
             } else {
-                // simple leaf child
                 $children[] = [
                     'name' => $child->name,
                     'spouse' => null,
