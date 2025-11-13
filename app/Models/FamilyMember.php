@@ -75,7 +75,7 @@ class FamilyMember extends Model
 
         // Extract area code (positions 6-12) for family connection
         $areaCode = substr($nik, 6, 6);
-        
+
         return self::where('nik', 'LIKE', '______' . $areaCode . '____')
                    ->where('nik', '!=', $nik)
                    ->get();
@@ -114,7 +114,7 @@ class FamilyMember extends Model
 
             // Determine relationship based on age and gender
             $relationship = $this->determineRelationship($member);
-            
+
             if ($relationship) {
                 $connections[] = [
                     'member' => $member,
@@ -133,22 +133,22 @@ class FamilyMember extends Model
     private function determineRelationship($otherMember)
     {
         $ageDiff = $this->birth_date->diffInYears($otherMember->birth_date);
-        
+
         // If other member is significantly older (20+ years)
         if ($ageDiff >= 20) {
             return $otherMember->gender === 'male' ? 'father' : 'mother';
         }
-        
+
         // If this member is significantly older (20+ years)
         if ($ageDiff <= -20) {
             return 'child';
         }
-        
+
         // If similar age (within 15 years), likely siblings
         if (abs($ageDiff) <= 15) {
             return 'sibling';
         }
-        
+
         return null;
     }
 
@@ -158,21 +158,21 @@ class FamilyMember extends Model
     private function calculateConnectionConfidence($otherMember)
     {
         $confidence = 50; // Base confidence
-        
+
         // Same area code in NIK
         if (self::isSameFamily($this->nik, $otherMember->nik)) {
             $confidence += 30;
         }
-        
+
         // Similar names (surname matching)
         $thisNameParts = explode(' ', $this->name);
         $otherNameParts = explode(' ', $otherMember->name);
-        
+
         $commonParts = array_intersect($thisNameParts, $otherNameParts);
         if (count($commonParts) > 0) {
             $confidence += 20;
         }
-        
+
         return min(100, $confidence);
     }
 
@@ -202,14 +202,7 @@ class FamilyMember extends Model
                 }
             }
 
-            if ($member->relation === 'mother') {
-                $existingMother = self::where('family_id', $member->family_id)
-                    ->where('relation', 'mother')
-                    ->first();
-                if ($existingMother) {
-                    throw new \Exception('Keluarga ini sudah memiliki ibu. Setiap keluarga hanya dapat memiliki satu ibu.');
-                }
-            }
+            // Removed mother validation to allow multiple mothers
         });
 
         static::updating(function ($member) {

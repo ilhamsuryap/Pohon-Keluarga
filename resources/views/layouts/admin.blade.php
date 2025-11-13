@@ -54,7 +54,7 @@
                 <div class="space-y-2">
                     <!-- Dashboard -->
                     <a href="{{ route('admin.dashboard') }}"
-                        class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors duration-200 {{ request()->routeIs('admin.dashboard') ? 'bg-green-100 text-green-700 border-r-4 border-green-500' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
+                        class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors duration-200 {{ request()->routeIs('admin.dashboard') ? 'bg-indigo-100 text-indigo-700 border-r-4 border-indigo-500' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
                         <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
@@ -66,7 +66,7 @@
 
                     <!-- Kelola User -->
                     <a href="{{ route('admin.users') }}"
-                        class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors duration-200 {{ request()->routeIs('admin.users') ? 'bg-green-100 text-green-700 border-r-4 border-green-500' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
+                        class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors duration-200 {{ request()->routeIs('admin.users') ? 'bg-indigo-100 text-indigo-700 border-r-4 border-indigo-500' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
                         <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z">
@@ -77,7 +77,7 @@
 
                     <!-- Pengaturan Pembayaran -->
                     <a href="{{ route('admin.payment-settings') }}"
-                        class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors duration-200 {{ request()->routeIs('admin.payment-settings') ? 'bg-green-100 text-green-700 border-r-4 border-green-500' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
+                        class="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors duration-200 {{ request()->routeIs('admin.payment-settings') ? 'bg-indigo-100 text-indigo-700 border-r-4 border-indigo-500' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' }}">
                         <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z">
@@ -91,7 +91,7 @@
                 <div class="mt-8 pt-6 border-t border-gray-200">
                     <div class="flex items-center px-4 py-2">
                         <div class="flex-shrink-0">
-                            <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                            <div class="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center">
                                 <span
                                     class="text-white text-sm font-medium">{{ substr(auth()->user()->name, 0, 1) }}</span>
                             </div>
@@ -151,15 +151,15 @@
             <main class="flex-1 p-6">
                 <!-- Flash Messages -->
                 @if (session('success'))
-                    <div class="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div class="mb-6 bg-indigo-50 border border-indigo-200 rounded-lg p-4">
                         <div class="flex">
-                            <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                            <svg class="w-5 h-5 text-indigo-400" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd"
                                     d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
                                     clip-rule="evenodd"></path>
                             </svg>
                             <div class="ml-3">
-                                <p class="text-sm font-medium text-green-800">
+                                <p class="text-sm font-medium text-indigo-800">
                                     {{ session('success') }}
                                 </p>
                             </div>

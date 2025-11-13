@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Family;
 use App\Models\FamilyMember;
+use App\Services\FamilyTreeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -28,7 +29,7 @@ class DashboardController extends Controller
         return view('dashboard.index', compact('family', 'totalMembers'));
     }
 
-    public function familyTree()
+    public function familyTree(FamilyTreeService $familyTreeService)
     {
         $user = Auth::user();
         $family = $user->families()->with('members')->first();
@@ -37,22 +38,10 @@ class DashboardController extends Controller
             return redirect()->route('dashboard')->with('error', 'Anda belum memiliki keluarga. Silakan buat keluarga terlebih dahulu.');
         }
 
-        $treeData = $this->buildFamilyTree($family);
+        // Build recursive tree by NIK linking across families
+        $tree = $familyTreeService->buildFamilyTree($family->id);
+        $treeJson = json_encode($tree, JSON_UNESCAPED_UNICODE);
         
-        return view('dashboard.family-tree', compact('family', 'treeData'));
-    }
-
-    private function buildFamilyTree($family)
-    {
-        $members = $family->members;
-        $parents = $members->whereIn('relation', ['father', 'mother']);
-        $children = $members->where('relation', 'child');
-
-        $tree = [
-            'parents' => $parents,
-            'children' => $children->groupBy('parent_id')
-        ];
-
-        return $tree;
+        return view('dashboard.family-tree', compact('family', 'treeJson'));
     }
 }

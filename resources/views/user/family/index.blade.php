@@ -14,7 +14,7 @@
             </div>
 
             @if (session('success'))
-                <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-6"
+                <div class="bg-gradient-to-br from-purple-50 to-blue-50 border border-purple-200 text-purple-700 px-4 py-3 rounded relative mb-6"
                     role="alert">
                     <span class="block sm:inline">{{ session('success') }}</span>
                 </div>
@@ -33,7 +33,7 @@
                             <div class="flex justify-between items-start">
                                 <div>
                                     <h2 class="text-xl font-semibold text-gray-900">{{ $family->family_name }}</h2>
-                                    <p class="text-gray-600 mt-1">{{ $family->members_count }} anggota</p>
+
                                     @if ($family->description)
                                         <p class="text-gray-600 mt-2">{{ $family->description }}</p>
                                     @endif

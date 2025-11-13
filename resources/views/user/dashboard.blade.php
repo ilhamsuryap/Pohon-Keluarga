@@ -32,9 +32,10 @@
                             </div>
                         </div>
 
-                        <div class="bg-green-50 p-6 rounded-lg">
+                        <div class="bg-gradient-to-br from-purple-50 to-blue-50 p-6 rounded-lg">
                             <div class="flex items-center">
-                                <div class="p-3 rounded-full bg-green-100 text-green-600">
+                                <div
+                                    class="p-3 rounded-full bg-gradient-to-br from-purple-100 to-blue-100 text-purple-600">
                                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z">
@@ -73,7 +74,7 @@
                                                 Lihat Detail
                                             </a>
                                             <a href="{{ route('user.family.edit', $family) }}"
-                                                class="text-green-600 hover:text-green-800 text-sm font-medium">
+                                                class="text-purple-600 hover:text-purple-800 text-sm font-medium">
                                                 Edit
                                             </a>
                                         </div>

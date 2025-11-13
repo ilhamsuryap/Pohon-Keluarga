@@ -1,13 +1,13 @@
 <style>
     .gradient-text {
-        background: linear-gradient(135deg, #10b981, #34d399, #6ee7b7);
+        background: linear-gradient(45deg, #a855f7, #3b82f6);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
     }
 
     .background-belakang {
-        background: linear-gradient(135deg, #10b981, #34d399, #6ee7b7);
+        background: linear-gradient(45deg, #a855f7, #3b82f6);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -21,9 +21,9 @@
             <div class="flex">
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
-                    <a href="{{ auth()->check() ? route('welcome') : url('/') }}">
+                    {{-- <a href="{{ auth()->check() ? route('welcome') : url('/') }}">
                         <img src="{{ asset('storage/pohonLogo.png') }}" alt="Logo" class="block h-20 w-auto" />
-                    </a>
+                    </a> --}}
                     <span class="text-2xl font-bold gradient-text">SilsilahKita</span>
                 </div>
 
@@ -46,6 +46,9 @@
                             </x-nav-link>
                             <x-nav-link :href="route('user.family.tree')" :active="request()->routeIs('user.family.tree')" class="flex items-center">
                                 {{ __('Pohon Keluarga') }}
+                            </x-nav-link>
+                            <x-nav-link :href="route('user.calendar')" :active="request()->routeIs('user.calendar')" class="flex items-center">
+                                {{ __('Kalender') }}
                             </x-nav-link>
                         @else
                             <x-nav-link :href="route('pending-approval')" :active="request()->routeIs('pending-approval')">
@@ -98,7 +101,7 @@
                 <div class="hidden sm:flex sm:items-center sm:ms-6 space-x-4">
                     <a href="{{ route('login') }}" class="text-gray-500 hover:text-gray-700">Login</a>
                     <a href="{{ route('register') }}"
-                        class="background-belakang hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium">Register</a>
+                        class="background-belakang hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium">Register</a>
                 </div>
             @endauth
 

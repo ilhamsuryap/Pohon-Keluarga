@@ -28,31 +28,31 @@
                     <div class="flex items-center">
                         <div class="flex-shrink-0">
                             <a href="{{ auth()->user()->isAdmin() ? route('admin.dashboard') : route('dashboard') }}"
-                                class="text-2xl font-bold text-green-600">
+                                class="text-2xl font-bold text-indigo-600">
                                 🌳 Pohon Keluarga
                             </a>
                         </div>
                         <div class="hidden md:ml-6 md:flex md:space-x-8">
                             @if (auth()->user()->isAdmin())
                                 <a href="{{ route('admin.dashboard') }}"
-                                    class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium {{ request()->routeIs('admin.dashboard') ? 'border-green-500 text-gray-900' : '' }}">
+                                    class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium {{ request()->routeIs('admin.dashboard') ? 'border-indigo-500 text-gray-900' : '' }}">
                                     Dashboard
                                 </a>
                                 <a href="{{ route('admin.users') }}"
-                                    class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium {{ request()->routeIs('admin.users') ? 'border-green-500 text-gray-900' : '' }}">
+                                    class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium {{ request()->routeIs('admin.users') ? 'border-indigo-500 text-gray-900' : '' }}">
                                     Kelola User
                                 </a>
                                 <a href="{{ route('admin.payment-settings') }}"
-                                    class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium {{ request()->routeIs('admin.payment-settings') ? 'border-green-500 text-gray-900' : '' }}">
+                                    class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium {{ request()->routeIs('admin.payment-settings') ? 'border-indigo-500 text-gray-900' : '' }}">
                                     Pengaturan Pembayaran
                                 </a>
                             @else
                                 <a href="{{ route('dashboard') }}"
-                                    class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium {{ request()->routeIs('dashboard') ? 'border-green-500 text-gray-900' : '' }}">
+                                    class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium {{ request()->routeIs('dashboard') ? 'border-indigo-500 text-gray-900' : '' }}">
                                     Dashboard
                                 </a>
                                 <a href="{{ route('family.tree') }}"
-                                    class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium {{ request()->routeIs('family.tree') ? 'border-green-500 text-gray-900' : '' }}">
+                                    class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium {{ request()->routeIs('family.tree') ? 'border-indigo-500 text-gray-900' : '' }}">
                                     Pohon Keluarga
                                 </a>
                             @endif
@@ -78,10 +78,10 @@
         <main class="py-6">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 @if (session('success'))
-                    <div class="mb-4 bg-green-50 border border-green-200 rounded-md p-4">
+                    <div class="mb-4 bg-indigo-50 border border-indigo-200 rounded-md p-4">
                         <div class="flex">
                             <div class="ml-3">
-                                <p class="text-sm font-medium text-green-800">
+                                <p class="text-sm font-medium text-indigo-800">
                                     {{ session('success') }}
                                 </p>
                             </div>

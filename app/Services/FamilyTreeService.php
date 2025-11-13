@@ -54,20 +54,19 @@ class FamilyTreeService
 
     /**
      * Build a recursive family tree starting from a family_id.
-     * Returns nested array matching the requested shape: name, spouse, children (array)
-     * This method will traverse connected families when a child becomes a parent in another family (by NIK).
-     * Uses $visitedFamilies to avoid infinite recursion.
+     * Returns nested array with separate nodes for each family member including profile photos.
+     * Couples are positioned as separate but horizontally aligned nodes.
      */
     public function buildFamilyTree(int $familyId): array
     {
         // 1) Kumpulkan semua keluarga yang terhubung transitif berdasarkan NIK
         $connectedFamilyIds = $this->collectConnectedFamilyIds($familyId);
         $members = FamilyMember::whereIn('family_id', $connectedFamilyIds)->get([
-            'id','family_id','name','nik','gender','birth_date','death_date','relation'
+            'id','family_id','name','nik','gender','birth_date','death_date','relation','photo','description'
         ]);
 
         if ($members->isEmpty()) {
-            return ['name' => "Keluarga $familyId", 'spouse' => null, 'children' => []];
+            return ['name' => "Keluarga $familyId", 'type' => 'family', 'children' => []];
         }
 
         // 2) Group per keluarga dan petakan ayah/ibu/anak (gunakan field 'relation', bukan 'role')
@@ -75,9 +74,11 @@ class FamilyTreeService
         $familyInfo = [];
         foreach ($byFamily as $fid => $list) {
             $father = $list->firstWhere('relation', 'father');
-            $mother = $list->firstWhere('relation', 'mother');
+            // allow multiple mothers per family; keep key name 'mother' but store collection
+            $mothers = $list->where('relation', 'mother')->values();
             $children = $list->where('relation', 'child')->values();
-            $familyInfo[$fid] = compact('father', 'mother', 'children');
+            // store mothers collection under 'mother' key for backward compatibility in other code
+            $familyInfo[$fid] = ['father' => $father, 'mother' => $mothers, 'children' => $children];
         }
 
         // 3) Index NIK -> anggota (untuk memetakan hubungan antar keluarga)
@@ -93,14 +94,31 @@ class FamilyTreeService
         foreach ($familyInfo as $fid => $info) {
             foreach (['father', 'mother'] as $role) {
                 $p = $info[$role] ?? null;
-                if ($p && $p->nik) {
-                    $sameNikMembers = $nikIndex->get($p->nik) ?? collect();
-                    foreach ($sameNikMembers as $m) {
-                        if ($m->family_id !== $fid && $m->relation === 'child') {
-                            $parentFamilyId = $m->family_id; // keluarga tempat orang ini menjadi anak
-                            $edges[$parentFamilyId][$fid] = true; // parent -> current
-                            $incoming[$fid] = ($incoming[$fid] ?? 0) + 1;
-                            $incoming[$parentFamilyId] = $incoming[$parentFamilyId] ?? 0;
+                // if $p is a collection (multiple mothers), iterate; otherwise treat as single member
+                if (is_iterable($p)) {
+                    foreach ($p as $pp) {
+                        if ($pp && ($pp->nik ?? null)) {
+                            $sameNikMembers = $nikIndex->get($pp->nik) ?? collect();
+                            foreach ($sameNikMembers as $m) {
+                                if ($m->family_id !== $fid && $m->relation === 'child') {
+                                    $parentFamilyId = $m->family_id; // keluarga tempat orang ini menjadi anak
+                                    $edges[$parentFamilyId][$fid] = true; // parent -> current
+                                    $incoming[$fid] = ($incoming[$fid] ?? 0) + 1;
+                                    $incoming[$parentFamilyId] = $incoming[$parentFamilyId] ?? 0;
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    if ($p && ($p->nik ?? null)) {
+                        $sameNikMembers = $nikIndex->get($p->nik) ?? collect();
+                        foreach ($sameNikMembers as $m) {
+                            if ($m->family_id !== $fid && $m->relation === 'child') {
+                                $parentFamilyId = $m->family_id; // keluarga tempat orang ini menjadi anak
+                                $edges[$parentFamilyId][$fid] = true; // parent -> current
+                                $incoming[$fid] = ($incoming[$fid] ?? 0) + 1;
+                                $incoming[$parentFamilyId] = $incoming[$parentFamilyId] ?? 0;
+                            }
                         }
                     }
                 }
@@ -114,7 +132,7 @@ class FamilyTreeService
             ->all();
         if (empty($roots)) { $roots = [$familyId]; }
 
-        // 6) DFS membangun subtree dari setiap root, menyatukan pasangan sebagai satu node
+        // 6) DFS membangun subtree dari setiap root, membuat node terpisah untuk setiap anggota
         $visitedFamilies = [];
         $buildSubtree = function (int $fid) use (&$buildSubtree, &$visitedFamilies, $familyInfo, $edges) {
             if (in_array($fid, $visitedFamilies, true)) { return null; }
@@ -122,16 +140,8 @@ class FamilyTreeService
 
             $info = $familyInfo[$fid] ?? ['father' => null, 'mother' => null, 'children' => collect()];
             $father = $info['father'];
-            $mother = $info['mother'];
-
-            // Pilih nama utama + spouse
-            $primary = $father ?: $mother;
-            $primaryName = $primary ? $primary->name : ("Keluarga $fid");
-            $spouseName = null;
-            if ($father && $mother) {
-                // tampilkan pasangan sebagai satu node
-                $spouseName = $primary === $father ? $mother->name : $father->name;
-            }
+            // 'mother' is a collection (may be empty)
+            $mother = $info['mother'] ?? collect();
 
             // Petakan anak yang "naik kelas" menjadi orang tua di keluarga lain
             $childFamilies = array_keys($edges[$fid] ?? []);
@@ -141,35 +151,38 @@ class FamilyTreeService
                 if (!$childInfo) { continue; }
                 foreach (['father', 'mother'] as $role) {
                     $p = $childInfo[$role] ?? null;
-                    if ($p && $p->nik) {
-                        $childNikToFamily[$p->nik] = $cfid;
+                    if (is_iterable($p)) {
+                        foreach ($p as $pp) {
+                            if ($pp && ($pp->nik ?? null)) {
+                                $childNikToFamily[$pp->nik] = $cfid;
+                            }
+                        }
+                    } else {
+                        if ($p && ($p->nik ?? null)) {
+                            $childNikToFamily[$p->nik] = $cfid;
+                        }
                     }
                 }
             }
 
-            // Bangun anak: jika anak punya family lanjutan, render sebagai couple-node (anak + pasangannya)
+            // Bangun anak: jika anak punya family lanjutan, render dengan pasangannya
             $childrenNodes = [];
             foreach (($info['children'] ?? collect()) as $child) {
                 $nextFamilyId = ($child->nik && isset($childNikToFamily[$child->nik])) ? $childNikToFamily[$child->nik] : null;
                 if ($nextFamilyId) {
                     $sub = $buildSubtree($nextFamilyId);
                     if ($sub) {
-                        $childrenNodes[] = [
-                            'name' => $child->name,
-                            'spouse' => $sub['spouse'] ?? null,
-                            'children' => $sub['children'] ?? [],
-                            'birth_date' => optional($child->birth_date)->format('Y-m-d'),
-                        ];
+                        // If the child becomes a parent in another family, use that family structure
+                        $childNode = $sub;
+                        $childNode['birth_date'] = optional($child->birth_date)->format('Y-m-d');
+                        $childrenNodes[] = $childNode;
                         continue;
                     }
                 }
-                // leaf
-                $childrenNodes[] = [
-                    'name' => $child->name,
-                    'spouse' => null,
-                    'children' => [],
-                    'birth_date' => optional($child->birth_date)->format('Y-m-d'),
-                ];
+                // leaf child
+                $childNode = $this->createPersonNode($child);
+                $childNode['birth_date'] = optional($child->birth_date)->format('Y-m-d');
+                $childrenNodes[] = $childNode;
             }
 
             // Urutkan anak dari yang tertua (tanggal lebih awal) ke termuda, null di akhir
@@ -185,11 +198,66 @@ class FamilyTreeService
             foreach ($childrenNodes as &$cn) { unset($cn['birth_date']); }
             unset($cn);
 
-            return [
-                'name' => $primaryName,
-                'spouse' => $spouseName,
-                'children' => $childrenNodes,
-            ];
+            // Create couple node or single parent node. Support multiple mothers.
+            $motherCount = is_countable($mother) ? count($mother) : ($mother ? 1 : 0);
+            if ($father && $motherCount > 0) {
+                // build mother_data as single object if one, or array of objects if more
+                if ($motherCount === 1) {
+                    $mObj = $mother->first();
+                    $motherData = $this->createPersonNode($mObj);
+                    $id = 'couple_' . $father->id . '_' . $mObj->id;
+                } else {
+                    $motherData = [];
+                    $ids = [];
+                    foreach ($mother as $mObj) {
+                        $motherData[] = $this->createPersonNode($mObj);
+                        $ids[] = $mObj->id;
+                    }
+                    $id = 'couple_' . $father->id . '_' . implode('_', $ids);
+                }
+
+                return [
+                    'type' => 'couple',
+                    'name' => $father->name . ' & ' . ($motherCount === 1 ? $motherData['name'] : ('Ibu x' . $motherCount)),
+                    'father_data' => $this->createPersonNode($father),
+                    'mother_data' => $motherData,
+                    'id' => $id,
+                    'children' => $childrenNodes,
+                ];
+            } elseif ($father) {
+                $node = $this->createPersonNode($father);
+                $node['children'] = $childrenNodes;
+                return $node;
+            } elseif ($motherCount > 0) {
+                // no father, but one or more mothers: expose mother_data (single or array) so the view can render them
+                if ($motherCount === 1) {
+                    $mObj = $mother->first();
+                    $motherData = $this->createPersonNode($mObj);
+                    $id = 'mother_only_' . $mObj->id;
+                } else {
+                    $motherData = [];
+                    $ids = [];
+                    foreach ($mother as $mObj) {
+                        $motherData[] = $this->createPersonNode($mObj);
+                        $ids[] = $mObj->id;
+                    }
+                    $id = 'mother_only_' . implode('_', $ids);
+                }
+                return [
+                    'type' => 'couple',
+                    'name' => 'Ibu',
+                    'father_data' => null,
+                    'mother_data' => $motherData,
+                    'id' => $id,
+                    'children' => $childrenNodes,
+                ];
+            } else {
+                return [
+                    'type' => 'family',
+                    'name' => "Keluarga $fid",
+                    'children' => $childrenNodes,
+                ];
+            }
         };
 
         $forest = [];
@@ -200,7 +268,27 @@ class FamilyTreeService
 
         // Jika hanya satu root, kembalikan langsung; jika banyak, bungkus agar D3 tetap bisa render
         if (count($forest) === 1) { return $forest[0]; }
-        return [ 'name' => 'Keluarga', 'spouse' => null, 'children' => $forest ];
+        return [ 'name' => 'Keluarga', 'type' => 'family', 'children' => $forest ];
+    }
+
+    /**
+     * Create a person node with all necessary data including photo
+     */
+    private function createPersonNode(FamilyMember $member): array
+    {
+        return [
+            'type' => 'person',
+            'id' => $member->id,
+            'name' => $member->name,
+            'gender' => $member->gender,
+            'photo' => $member->photo,
+            'description' => $member->description,
+            'nik' => $member->nik,
+            'birth_date' => optional($member->birth_date)->format('Y-m-d'),
+            'death_date' => optional($member->death_date)->format('Y-m-d'),
+            'relation' => $member->relation,
+            'children' => [],
+        ];
     }
 
     private function buildFamilyNodeFromFamily(int $familyId, array &$visited): ?array

@@ -5,9 +5,9 @@
             <!-- Header -->
             <div class="text-center">
                 <div class="pohonlogo">
-                    <a href="/">
+                    {{-- <a href="/">
                         <img src="{{ asset('storage/pohonLogo.png') }}" alt="Logo" class="mx-auto w-20 h-auto" />
-                    </a>
+                    </a> --}}
                 </div>
                 <h2 class="text-2xl font-semibold text-gray-900 mb-1">Daftar Akun</h2>
                 <p class="text-sm text-gray-600">Silakan lengkapi data diri Anda</p>
@@ -110,7 +110,7 @@
                 <!-- Submit Button -->
                 <div class="space-y-3">
                     <x-primary-button
-                        class="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-md text-sm font-medium text-white bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 transition duration-200">
+                        class="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-md text-sm font-medium text-white bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 transition duration-200">
                         <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />

@@ -24,11 +24,16 @@ class FamilyController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
-        // Get all family members with relationships loaded
-        $familyMembers = $family->members()
-            ->with(['parent', 'children'])
-            ->orderBy('relation')
-            ->get();
+        // For family-type groups, load family members including relationships.
+        if ($family->type === 'family') {
+            $familyMembers = $family->members()
+                ->with(['parent', 'children'])
+                ->orderBy('relation')
+                ->get();
+        } else {
+            // For company groups, export is not yet supported in PDF diagram format.
+            return redirect()->back()->with('error', 'Export PDF belum didukung untuk grup berjenis Perusahaan.');
+        }
 
         // Generate the HTML content with the diagram
         $html = view('exports.family-tree-diagram', [
@@ -74,6 +79,10 @@ class FamilyController extends Controller
 
     public function store(Request $request, Family $family)
     {
+        // Only allow adding family members to a 'family' type group
+        if ($family->type !== 'family') {
+            return redirect()->back()->with('error', 'Operasi hanya tersedia untuk grup berjenis Family.');
+        }
         // Ensure user has access to this family
         if ($family->user_id !== auth()->id()) {
             abort(403, 'Unauthorized action.');
@@ -91,7 +100,7 @@ class FamilyController extends Controller
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        // Check if father or mother already exists for this family
+        // Check if father already exists for this family (mother can be multiple)
         if ($request->relation === 'father') {
             $existingFather = $family->members()->where('relation', 'father')->first();
             if ($existingFather) {
@@ -101,16 +110,6 @@ class FamilyController extends Controller
             }
         }
 
-        if ($request->relation === 'mother') {
-            $existingMother = $family->members()->where('relation', 'mother')->first();
-            if ($existingMother) {
-                return redirect()->back()
-                    ->withInput()
-                    ->with('error', 'Keluarga ini sudah memiliki ibu. Setiap keluarga hanya dapat memiliki satu ibu.');
-            }
-        }
-
-        // Handle photo upload if provided
         $photoPath = null;
         if ($request->hasFile('photo')) {
             $photoPath = $request->file('photo')->store('family_photos', 'public');
@@ -147,7 +146,7 @@ class FamilyController extends Controller
             if ($photoPath) {
                 Storage::disk('public')->delete($photoPath);
             }
-            
+
             return redirect()->back()
                 ->withInput()
                 ->with('error', $e->getMessage());
@@ -158,6 +157,10 @@ class FamilyController extends Controller
     {
         $user = Auth::user();
         $family = $user->families()->first();
+
+        if ($family && $family->type !== 'family') {
+            return redirect()->route('user.family.index')->with('error', 'Operasi hanya tersedia untuk grup berjenis Family.');
+        }
 
         if (!$family) {
             return redirect()->route('dashboard')->with('error', 'Anda belum memiliki keluarga.');
@@ -217,7 +220,9 @@ class FamilyController extends Controller
     {
         $user = Auth::user();
         $family = $user->families()->first();
-
+        if ($family && $family->type !== 'family') {
+            return redirect()->route('user.family.index')->with('error', 'Operasi hanya tersedia untuk grup berjenis Family.');
+        }
         if (!$family) {
             return redirect()->route('dashboard')->with('error', 'Anda belum memiliki keluarga.');
         }
@@ -235,17 +240,24 @@ class FamilyController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
-        // Get all family members with relationships loaded
-        $familyMembers = $family->members()
-            ->with(['parent', 'children'])
-            ->orderBy('relation')
-            ->get();
+        if ($family->type === 'family') {
+            $familyMembers = $family->members()
+                ->with(['parent', 'children'])
+                ->orderBy('relation')
+                ->get();
+        } else {
+            // company members do not have parent/children relation
+            $familyMembers = $family->members()->orderBy('role')->get();
+        }
 
         return view('user.family.show', compact('family', 'familyMembers'));
     }
 
     public function edit(Family $family, FamilyMember $member)
     {
+        if ($family->type !== 'family') {
+            return redirect()->route('user.family.index')->with('error', 'Operasi hanya tersedia untuk grup berjenis Family.');
+        }
         // Ensure user has access to this family
         if ($family->user_id !== auth()->id()) {
             abort(403, 'Unauthorized action.');
@@ -272,6 +284,9 @@ class FamilyController extends Controller
 
     public function update(Request $request, Family $family, FamilyMember $member)
     {
+        if ($family->type !== 'family') {
+            return redirect()->route('user.family.index')->with('error', 'Operasi hanya tersedia untuk grup berjenis Family.');
+        }
         // Ensure user has access to this family
         if ($family->user_id !== auth()->id()) {
             abort(403, 'Unauthorized action.');
@@ -303,14 +318,7 @@ class FamilyController extends Controller
                 }
             }
 
-            if ($request->relation === 'mother') {
-                $existingMother = $family->members()->where('relation', 'mother')->where('id', '!=', $member->id)->first();
-                if ($existingMother) {
-                    return redirect()->back()
-                        ->withInput()
-                        ->with('error', 'Keluarga ini sudah memiliki ibu. Setiap keluarga hanya dapat memiliki satu ibu.');
-                }
-            }
+            // Removed mother validation to allow multiple mothers
         }
 
         $data = $request->except('photo');
@@ -336,7 +344,7 @@ class FamilyController extends Controller
             if ($request->hasFile('photo') && isset($data['photo'])) {
                 Storage::disk('public')->delete($data['photo']);
             }
-            
+
             return redirect()->back()
                 ->withInput()
                 ->with('error', $e->getMessage());
@@ -345,6 +353,9 @@ class FamilyController extends Controller
 
     public function destroy(Family $family, FamilyMember $member)
     {
+        if ($family->type !== 'family') {
+            return redirect()->route('user.family.index')->with('error', 'Operasi hanya tersedia untuk grup berjenis Family.');
+        }
         // Ensure user has access to this family
         if ($family->user_id !== auth()->id()) {
             abort(403, 'Unauthorized action.');
@@ -372,6 +383,9 @@ class FamilyController extends Controller
      */
     public function getFamilySuggestions(Family $family, FamilyMember $member)
     {
+        if ($family->type !== 'family') {
+            return response()->json(['error' => 'Operasi hanya tersedia untuk grup berjenis Family.'], 400);
+        }
         // Ensure user has access to this family
         if ($family->user_id !== auth()->id()) {
             abort(403, 'Unauthorized action.');
@@ -395,6 +409,9 @@ class FamilyController extends Controller
      */
     public function connectFamily(Request $request, Family $family, FamilyMember $member)
     {
+        if ($family->type !== 'family') {
+            return response()->json(['success' => false, 'message' => 'Operasi hanya tersedia untuk grup berjenis Family.'], 400);
+        }
         // Ensure user has access to this family
         if ($family->user_id !== auth()->id()) {
             abort(403, 'Unauthorized action.');
@@ -428,13 +445,13 @@ class FamilyController extends Controller
                     // Set target as parent of current member
                     $member->update(['parent_id' => $targetMember->id]);
                     break;
-                
+
                 case 'child':
                     // Set current member as parent of target
                     $targetMember->update(['parent_id' => $member->id]);
                     $member->update(['has_children' => true]);
                     break;
-                
+
                 case 'sibling':
                     // If one has a parent, set the same parent for the other
                     if ($member->parent_id) {

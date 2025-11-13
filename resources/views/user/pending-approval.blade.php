@@ -51,7 +51,9 @@
                                 <div class="flex">
                                     <div class="flex-shrink-0">
                                         <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                                            <path fill-rule="evenodd"
+                                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                                clip-rule="evenodd" />
                                         </svg>
                                     </div>
                                     <div class="ml-3">
@@ -59,13 +61,16 @@
                                             Bukti Pembayaran Diperlukan
                                         </h3>
                                         <div class="mt-2 text-sm text-red-700">
-                                            <p>Jumlah pembayaran: <strong>Rp {{ number_format(Auth::user()->payment_amount, 0, ',', '.') }}</strong></p>
+                                            <p>Jumlah pembayaran: <strong>Rp
+                                                    {{ number_format(Auth::user()->payment_amount, 0, ',', '.') }}</strong>
+                                            </p>
                                             <p>Kode unik: <strong>{{ Auth::user()->payment_code }}</strong></p>
-                                            <p class="mt-2">Anda perlu mengupload bukti pembayaran untuk melanjutkan proses aktivasi akun.</p>
+                                            <p class="mt-2">Anda perlu mengupload bukti pembayaran untuk melanjutkan
+                                                proses aktivasi akun.</p>
                                         </div>
                                         <div class="mt-4">
-                                            <a href="{{ route('payment-proof.upload') }}" 
-                                               class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700">
+                                            <a href="{{ route('payment-proof.upload') }}"
+                                                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700">
                                                 Upload Bukti Pembayaran
                                             </a>
                                         </div>
@@ -77,7 +82,9 @@
                                 <div class="flex">
                                     <div class="flex-shrink-0">
                                         <svg class="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                            <path fill-rule="evenodd"
+                                                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                                                clip-rule="evenodd" />
                                         </svg>
                                     </div>
                                     <div class="ml-3">
@@ -85,17 +92,22 @@
                                             Menunggu Verifikasi Pembayaran
                                         </h3>
                                         <div class="mt-2 text-sm text-yellow-700">
-                                            <p>Bukti pembayaran Anda telah diupload pada: <strong>{{ Auth::user()->payment_proof_uploaded_at->format('d/m/Y H:i') }}</strong></p>
-                                            <p>Jumlah: <strong>Rp {{ number_format(Auth::user()->payment_amount, 0, ',', '.') }}</strong></p>
-                                            <p class="mt-2">Admin sedang memverifikasi pembayaran Anda. Anda akan mendapat notifikasi WhatsApp setelah disetujui.</p>
+                                            <p>Bukti pembayaran Anda telah diupload pada:
+                                                <strong>{{ Auth::user()->payment_proof_uploaded_at->format('d/m/Y H:i') }}</strong>
+                                            </p>
+                                            <p>Jumlah: <strong>Rp
+                                                    {{ number_format(Auth::user()->payment_amount, 0, ',', '.') }}</strong>
+                                            </p>
+                                            <p class="mt-2">Admin sedang memverifikasi pembayaran Anda. Anda akan
+                                                mendapat notifikasi WhatsApp setelah disetujui.</p>
                                         </div>
                                         <div class="mt-4 space-x-2">
-                                            <a href="{{ route('payment-proof.view') }}" 
-                                               class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-yellow-800 bg-yellow-100 hover:bg-yellow-200">
+                                            <a href="{{ route('payment-proof.view') }}"
+                                                class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-yellow-800 bg-yellow-100 hover:bg-yellow-200">
                                                 Lihat Bukti Pembayaran
                                             </a>
-                                            <a href="{{ route('payment-proof.upload') }}" 
-                                               class="inline-flex items-center px-3 py-2 border border-yellow-300 text-sm font-medium rounded-md text-yellow-700 bg-white hover:bg-yellow-50">
+                                            <a href="{{ route('payment-proof.upload') }}"
+                                                class="inline-flex items-center px-3 py-2 border border-yellow-300 text-sm font-medium rounded-md text-yellow-700 bg-white hover:bg-yellow-50">
                                                 Edit/Upload Ulang
                                             </a>
                                         </div>
@@ -107,7 +119,9 @@
                                 <div class="flex">
                                     <div class="flex-shrink-0">
                                         <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                                            <path fill-rule="evenodd"
+                                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                                clip-rule="evenodd" />
                                         </svg>
                                     </div>
                                     <div class="ml-3">
@@ -116,13 +130,15 @@
                                         </h3>
                                         <div class="mt-2 text-sm text-red-700">
                                             <p>Bukti pembayaran Anda tidak dapat diverifikasi.</p>
-                                            <p>Jumlah yang harus dibayar: <strong>Rp {{ number_format(Auth::user()->payment_amount, 0, ',', '.') }}</strong></p>
+                                            <p>Jumlah yang harus dibayar: <strong>Rp
+                                                    {{ number_format(Auth::user()->payment_amount, 0, ',', '.') }}</strong>
+                                            </p>
                                             <p>Kode unik: <strong>{{ Auth::user()->payment_code }}</strong></p>
                                             <p class="mt-2">Silakan upload ulang bukti pembayaran yang valid.</p>
                                         </div>
                                         <div class="mt-4">
-                                            <a href="{{ route('payment-proof.upload') }}" 
-                                               class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700">
+                                            <a href="{{ route('payment-proof.upload') }}"
+                                                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700">
                                                 Upload Ulang Bukti Pembayaran
                                             </a>
                                         </div>
@@ -130,20 +146,24 @@
                                 </div>
                             </div>
                         @elseif (Auth::user()->payment_status === 'approved')
-                            <div class="mt-6 bg-green-50 border border-green-200 rounded-md p-4">
+                            <div
+                                class="mt-6 bg-gradient-to-br from-purple-50 to-blue-50 border border-purple-200 rounded-md p-4">
                                 <div class="flex">
                                     <div class="flex-shrink-0">
-                                        <svg class="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                        <svg class="h-5 w-5 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd"
+                                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                                clip-rule="evenodd" />
                                         </svg>
                                     </div>
                                     <div class="ml-3">
-                                        <h3 class="text-sm font-medium text-green-800">
+                                        <h3 class="text-sm font-medium text-purple-800">
                                             Pembayaran Disetujui
                                         </h3>
-                                        <div class="mt-2 text-sm text-green-700">
+                                        <div class="mt-2 text-sm text-purple-700">
                                             <p>Pembayaran Anda telah diverifikasi dan disetujui!</p>
-                                            <p>Akun Anda akan segera diaktifkan setelah persetujuan final dari admin.</p>
+                                            <p>Akun Anda akan segera diaktifkan setelah persetujuan final dari admin.
+                                            </p>
                                         </div>
                                     </div>
                                 </div>

@@ -5,11 +5,11 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <!-- Header Section -->
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-2xl mb-8">
-                <div class="bg-gradient-to-r from-green-600 to-green-500 px-6 py-8">
+                <div class="bg-gradient-to-r from-purple-600 to-blue-500 px-6 py-8">
                     <div class="flex items-center justify-between">
                         <div>
                             <h1 class="text-3xl font-bold text-white mb-2">{{ $family->family_name }}</h1>
-                            <p class="text-indigo-100">Silsilah Keluarga</p>
+                            <p class="text-blue-100">Silsilah Keluarga</p>
                         </div>
                         <div class="flex space-x-4">
                             <button onclick="document.getElementById('addModal').classList.remove('hidden')"
@@ -57,7 +57,9 @@
                     <div class="flex">
                         <div class="flex-shrink-0">
                             <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.257 3.099c.366-.446 1.12-.173 1.12.383v7.036c0 .556-.754.829-1.12.383L5.46 8.383a1 1 0 010-1.266l2.797-3.018z" clip-rule="evenodd" />
+                                <path fill-rule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.257 3.099c.366-.446 1.12-.173 1.12.383v7.036c0 .556-.754.829-1.12.383L5.46 8.383a1 1 0 010-1.266l2.797-3.018z"
+                                    clip-rule="evenodd" />
                             </svg>
                         </div>
                         <div class="ml-3">
@@ -89,21 +91,49 @@
                 </div>
             @endif
 
-            <!-- Family Tree Visualization -->
-            <div class="bg-white overflow-hidden shadow-xl sm:rounded-2xl mb-8">
-                <div class="p-8">
-                    <div class="text-center mb-8">
-                        <h2 class="text-2xl font-bold text-gray-900 mb-2">Pohon Keluarga</h2>
-                        <p class="text-gray-600">{{ $family->description }}</p>
-                    </div>
+            <!-- Family / Company Visualization -->
+            @if ($family->type === 'company')
+                <div class="bg-white overflow-hidden shadow-xl sm:rounded-2xl mb-8">
+                    <div class="p-8">
+                        <div class="flex items-center justify-between mb-6">
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-900 mb-2">Struktur Perusahaan</h2>
+                                <p class="text-gray-600">{{ $family->description }}</p>
+                            </div>
+                            <div class="flex space-x-4">
+                                <button onclick="document.getElementById('addCompanyModal').classList.remove('hidden')"
+                                    class="inline-flex items-center px-6 py-3 border border-transparent text-sm font-medium rounded-xl bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white transition-all duration-200 transform hover:scale-105 shadow-lg">
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                    </svg>
+                                    Tambah Anggota Perusahaan
+                                </button>
+                            </div>
+                        </div>
 
-                    <div id="family-tree"
-                        class="rounded-2xl p-8 bg-gradient-to-br from-gray-50 to-blue-50 border border-gray-100">
-                        <div class="family-tree-container">
+                        <div id="family-tree"
+                            class="rounded-2xl p-8 bg-gradient-to-br from-gray-50 to-blue-50 border border-gray-100">
+                            <div class="family-tree-container"></div>
                         </div>
                     </div>
                 </div>
-            </div>
+            @else
+                <div class="bg-white overflow-hidden shadow-xl sm:rounded-2xl mb-8">
+                    <div class="p-8">
+                        <div class="text-center mb-8">
+                            <h2 class="text-2xl font-bold text-gray-900 mb-2">Pohon Keluarga</h2>
+                            <p class="text-gray-600">{{ $family->description }}</p>
+                        </div>
+
+                        <div id="family-tree"
+                            class="rounded-2xl p-8 bg-gradient-to-br from-gray-50 to-blue-50 border border-gray-100">
+                            <div class="family-tree-container">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endif
 
             {{-- <!-- Family Description -->
             @if ($family->description)
@@ -443,9 +473,192 @@
                         return;
                     }
 
+                    // Prepare counters and totals per role (relation)
+                    const totals = {};
+                    const indices = {};
+                    members.forEach(m => {
+                        const key = m.relation || m.role || 'anggota';
+                        totals[key] = (totals[key] || 0) + 1;
+                    });
+
+                    function mapRoleLabel(key) {
+                        if (!key) return 'Anggota';
+                        switch (key) {
+                            case 'father':
+                                return 'Ayah';
+                            case 'mother':
+                                return 'Ibu';
+                            case 'child':
+                                return 'Anak';
+                            case 'director':
+                                return 'Direktur';
+                            case 'manager':
+                                return 'Manajer';
+                            case 'staff':
+                                return 'Staf';
+                            case 'intern':
+                                return 'Magang';
+                            default:
+                                return (key.charAt(0).toUpperCase() + key.slice(1));
+                        }
+                    }
+
+                    function numberedLabelFor(member) {
+                        const key = member.relation || member.role || 'anggota';
+                        indices[key] = (indices[key] || 0) + 1;
+                        const idx = indices[key];
+                        const label = mapRoleLabel(key);
+                        return idx > 1 ? label + ' ' + idx : label;
+                    }
+
                     // Group members by relation
                     const parents = members.filter(m => m.relation === 'father' || m.relation === 'mother');
                     const children = members.filter(m => m.relation === 'child');
+
+                    // Create member node function (placed here so it can access numberedLabelFor)
+                    function createMemberNode(member) {
+                        const node = document.createElement('div');
+                        node.className = 'family-member';
+
+                        const photoDiv = document.createElement('div');
+                        photoDiv.className = 'family-member-photo';
+
+                        if (member.photo) {
+                            const img = document.createElement('img');
+                            img.src = '/storage/' + member.photo;
+                            img.alt = member.name;
+                            photoDiv.appendChild(img);
+                        } else {
+                            // Default avatar based on gender
+                            const img = document.createElement('img');
+                            img.src = member.gender === 'male' ? '/images/male-avatar.svg' : '/images/female-avatar.svg';
+                            img.alt = member.name;
+                            photoDiv.appendChild(img);
+                        }
+
+                        // Add action buttons container
+                        const actionsContainer = document.createElement('div');
+                        actionsContainer.className = 'action-buttons-container';
+
+                        // View Detail button (top left)
+                        const viewButton = document.createElement('button');
+                        viewButton.className = 'action-button view action-button-top-left';
+                        viewButton.innerHTML =
+                            '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>';
+                        viewButton.title = 'Lihat Detail';
+                        viewButton.onclick = () => {
+                            showMemberDetail(member);
+                        };
+                        actionsContainer.appendChild(viewButton);
+
+                        // Add button (top right) - only show for father
+                        if (member.relation === 'father') {
+                            const addButton = document.createElement('button');
+                            addButton.className = 'action-button add action-button-top-right';
+                            addButton.innerHTML = '+';
+                            addButton.title = 'Tambah Anggota';
+                            addButton.onclick = () => {
+                                document.getElementById('addModal').classList.remove('hidden');
+                            };
+                            actionsContainer.appendChild(addButton);
+                        }
+
+                        // Edit button (bottom right)
+                        const editButton = document.createElement('button');
+                        editButton.className = 'action-button edit action-button-bottom-right';
+                        editButton.innerHTML =
+                            '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>';
+                        editButton.title = 'Edit';
+                        editButton.onclick = () => {
+                            // Populate form with member data
+                            document.getElementById('edit_member_id').value = member.id;
+                            document.getElementById('edit_name').value = member.name;
+                            document.getElementById('edit_nik').value = member.nik || '';
+                            document.getElementById('edit_relation').value = member.relation;
+                            document.getElementById('edit_gender').value = member.gender;
+                            // Format birth_date to YYYY-MM-DD for input type="date"
+                            const birthDate = new Date(member.birth_date);
+                            const formattedDate = birthDate.toISOString().split('T')[0];
+                            document.getElementById('edit_birth_date').value = formattedDate;
+                            document.getElementById('edit_description').value = member.description || '';
+
+                            // Update form action URL
+                            const form = document.getElementById('editForm');
+                            form.action = `/user/family/${member.family_id}/members/${member.id}`;
+
+                            // Update preview photo if exists
+                            const previewDiv = document.querySelector('.preview-avatar-edit');
+                            if (member.photo) {
+                                previewDiv.innerHTML =
+                                    `<img src="/storage/${member.photo}" class="w-full h-full object-cover">`;
+                            } else {
+                                const defaultAvatar = member.gender === 'male' ? '/images/male-avatar.svg' :
+                                    '/images/female-avatar.svg';
+                                previewDiv.innerHTML =
+                                    `<img src="${defaultAvatar}" class="w-full h-full object-cover">`;
+                            }
+
+                            // Show modal
+                            document.getElementById('editModal').classList.remove('hidden');
+                        };
+                        actionsContainer.appendChild(editButton);
+
+                        // Delete button (bottom left)
+                        const deleteButton = document.createElement('button');
+                        deleteButton.className = 'action-button delete action-button-bottom-left';
+                        deleteButton.innerHTML =
+                            '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>';
+                        deleteButton.title = 'Hapus';
+                        deleteButton.onclick = () => {
+                            if (confirm('Apakah Anda yakin ingin menghapus anggota keluarga ini?')) {
+                                const form = document.createElement('form');
+                                form.method = 'POST';
+                                form.action = `/user/family/${member.family_id}/members/${member.id}`;
+                                const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+
+                                const methodInput = document.createElement('input');
+                                methodInput.type = 'hidden';
+                                methodInput.name = '_method';
+                                methodInput.value = 'DELETE';
+
+                                const tokenInput = document.createElement('input');
+                                tokenInput.type = 'hidden';
+                                tokenInput.name = '_token';
+                                tokenInput.value = csrfToken;
+
+                                form.appendChild(methodInput);
+                                form.appendChild(tokenInput);
+                                document.body.appendChild(form);
+                                form.submit();
+                            }
+                        };
+                        actionsContainer.appendChild(deleteButton);
+
+                        node.appendChild(actionsContainer);
+
+                        // Add badge if member is marked as "widor"
+                        if (member.nickname === 'widor') {
+                            const badge = document.createElement('div');
+                            badge.className = 'family-member-badge';
+                            badge.textContent = 'widor';
+                            node.appendChild(badge);
+                        }
+
+                        const nameDiv = document.createElement('div');
+                        nameDiv.className = 'family-member-name';
+                        nameDiv.textContent = member.name;
+
+                        const relationDiv = document.createElement('div');
+                        relationDiv.className = 'family-member-relation';
+                        // Use numbered label if multiple members share same relation
+                        relationDiv.textContent = numberedLabelFor(member);
+
+                        node.appendChild(photoDiv);
+                        node.appendChild(nameDiv);
+                        node.appendChild(relationDiv);
+
+                        return node;
+                    }
 
                     // Create parents level
                     if (parents.length > 0) {
@@ -607,8 +820,8 @@
 
                     const relationDiv = document.createElement('div');
                     relationDiv.className = 'family-member-relation';
-                    relationDiv.textContent = member.relation === 'father' ? 'Ayah' :
-                        member.relation === 'mother' ? 'Ibu' : 'Anak';
+                    // Use numbered label if multiple members share same relation
+                    relationDiv.textContent = numberedLabelFor(member);
 
                     node.appendChild(photoDiv);
                     node.appendChild(nameDiv);
@@ -703,7 +916,8 @@
                             <div>
                                 <label for="add_nik" class="block text-sm font-semibold text-gray-700 mb-2">NIK (Nomor
                                     Induk Kependudukan)</label>
-                                <input type="text" name="nik" id="add_nik" maxlength="16" pattern="[0-9]{16}" value="{{ old('nik') }}"
+                                <input type="text" name="nik" id="add_nik" maxlength="16" pattern="[0-9]{16}"
+                                    value="{{ old('nik') }}"
                                     class="form-input w-full px-4 py-3 text-gray-900 placeholder-gray-500"
                                     placeholder="Masukkan 16 digit NIK">
                                 <p class="mt-1 text-sm text-gray-500">NIK digunakan untuk menghubungkan anggota keluarga
@@ -719,9 +933,12 @@
                                 <select name="relation" id="add_relation" required
                                     class="form-input w-full px-4 py-3 text-gray-900">
                                     <option value="">Pilih Hubungan</option>
-                                    <option value="father" {{ old('relation')=='father' ? 'selected' : '' }}>Ayah</option>
-                                    <option value="mother" {{ old('relation')=='mother' ? 'selected' : '' }}>Ibu</option>
-                                    <option value="child" {{ old('relation')=='child' ? 'selected' : '' }}>Anak</option>
+                                    <option value="father" {{ old('relation') == 'father' ? 'selected' : '' }}>Ayah
+                                    </option>
+                                    <option value="mother" {{ old('relation') == 'mother' ? 'selected' : '' }}>Ibu
+                                    </option>
+                                    <option value="child" {{ old('relation') == 'child' ? 'selected' : '' }}>Anak
+                                    </option>
                                 </select>
                                 @error('relation')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -734,8 +951,10 @@
                                 <select name="gender" id="add_gender" required
                                     class="form-input w-full px-4 py-3 text-gray-900">
                                     <option value="">Pilih Jenis Kelamin</option>
-                                    <option value="male" {{ old('gender')=='male' ? 'selected' : '' }}>Laki-laki</option>
-                                    <option value="female" {{ old('gender')=='female' ? 'selected' : '' }}>Perempuan</option>
+                                    <option value="male" {{ old('gender') == 'male' ? 'selected' : '' }}>Laki-laki
+                                    </option>
+                                    <option value="female" {{ old('gender') == 'female' ? 'selected' : '' }}>Perempuan
+                                    </option>
                                 </select>
                                 @error('gender')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -745,8 +964,8 @@
                             <div>
                                 <label for="add_birth_date" class="block text-sm font-semibold text-gray-700 mb-2">Tanggal
                                     Lahir</label>
-                                <input type="date" name="birth_date" id="add_birth_date" required value="{{ old('birth_date') }}"
-                                    class="form-input w-full px-4 py-3 text-gray-900">
+                                <input type="date" name="birth_date" id="add_birth_date" required
+                                    value="{{ old('birth_date') }}" class="form-input w-full px-4 py-3 text-gray-900">
                                 @error('birth_date')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
@@ -1181,4 +1400,291 @@
                     }
                 });
             </script>
+            <!-- Company Add/Edit Modals and Script -->
+            @if ($family->type === 'company')
+                <!-- Add Company Member Modal -->
+                <div id="addCompanyModal"
+                    class="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto hidden z-50 backdrop-blur-sm">
+                    <div class="flex items-center justify-center min-h-screen p-4">
+                        <div class="modal-content relative w-full max-w-md p-6">
+                            <button onclick="closeAddCompanyModal()"
+                                class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                                &times;
+                            </button>
+                            <div class="text-center mb-6">
+                                <h3 class="text-2xl font-bold">Tambah Anggota Perusahaan</h3>
+                                <p class="text-gray-600">Tambahkan anggota sesuai peran</p>
+                            </div>
+                            <form id="addCompanyForm" action="{{ route('user.family.company.members.store', $family) }}"
+                                method="POST" enctype="multipart/form-data" class="space-y-4">
+                                @csrf
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Nama</label>
+                                    <input type="text" name="name" required class="form-input w-full px-3 py-2">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Peran</label>
+                                    <select name="role" required class="form-input w-full px-3 py-2">
+                                        <option value="director">Direktur</option>
+                                        <option value="manager">Manajer</option>
+                                        <option value="staff">Staf</option>
+                                        <option value="intern">Magang</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Deskripsi</label>
+                                    <textarea name="description" rows="3" class="form-input w-full"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Foto (opsional)</label>
+                                    <input type="file" name="photo" accept="image/*" class="form-input w-full">
+                                </div>
+                                <div class="flex space-x-3 justify-end">
+                                    <button type="button" onclick="closeAddCompanyModal()"
+                                        class="px-4 py-2 border rounded">Batal</button>
+                                    <button type="submit" class="px-4 py-2 btn-primary text-white">Tambah</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Edit Company Member Modal -->
+                <div id="editCompanyModal"
+                    class="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto hidden z-50 backdrop-blur-sm">
+                    <div class="flex items-center justify-center min-h-screen p-4">
+                        <div class="modal-content relative w-full max-w-md p-6">
+                            <button onclick="closeEditCompanyModal()"
+                                class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">&times;</button>
+                            <div class="text-center mb-6">
+                                <h3 class="text-2xl font-bold">Edit Anggota Perusahaan</h3>
+                            </div>
+                            <form id="editCompanyForm" action="#" method="POST" enctype="multipart/form-data"
+                                class="space-y-4">
+                                @csrf
+                                @method('PUT')
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Nama</label>
+                                    <input type="text" name="name" id="edit_company_name" required
+                                        class="form-input w-full px-3 py-2">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Peran</label>
+                                    <select name="role" id="edit_company_role" required
+                                        class="form-input w-full px-3 py-2">
+                                        <option value="director">Direktur</option>
+                                        <option value="manager">Manajer</option>
+                                        <option value="staff">Staf</option>
+                                        <option value="intern">Magang</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Deskripsi</label>
+                                    <textarea name="description" id="edit_company_description" rows="3" class="form-input w-full"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Foto (opsional)</label>
+                                    <input type="file" name="photo" id="edit_company_photo" accept="image/*"
+                                        class="form-input w-full">
+                                </div>
+                                <div class="flex space-x-3 justify-end">
+                                    <button type="button" onclick="closeEditCompanyModal()"
+                                        class="px-4 py-2 border rounded">Batal</button>
+                                    <button type="submit" class="px-4 py-2 btn-primary text-white">Simpan</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                    // Render company members as a silsilah-style diagram (director -> managers -> staffs)
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const members = @json($familyMembers);
+                        const container = document.querySelector('.family-tree-container');
+
+                        if (!container) return;
+
+                        if (members.length === 0) {
+                            container.innerHTML =
+                                `<div class="empty-state"><h3 class="text-xl font-semibold mb-2">Belum Ada Anggota</h3><p class="text-gray-600">Tambahkan anggota perusahaan terlebih dahulu.</p></div>`;
+                            return;
+                        }
+
+                        // Prepare role totals and counters for numbering labels
+                        const totals = {};
+                        const indices = {};
+                        members.forEach(m => {
+                            const key = m.role || m.relation || 'anggota';
+                            totals[key] = (totals[key] || 0) + 1;
+                        });
+
+                        function mapRoleLabel(key) {
+                            if (!key) return 'Anggota';
+                            switch (key) {
+                                case 'father':
+                                    return 'Ayah';
+                                case 'mother':
+                                    return 'Ibu';
+                                case 'child':
+                                    return 'Anak';
+                                case 'director':
+                                    return 'Direktur';
+                                case 'manager':
+                                    return 'Manajer';
+                                case 'staff':
+                                    return 'Staf';
+                                case 'intern':
+                                    return 'Magang';
+                                default:
+                                    return (key.charAt(0).toUpperCase() + key.slice(1));
+                            }
+                        }
+
+                        function numberedLabelFor(member) {
+                            const key = member.role || member.relation || 'anggota';
+                            indices[key] = (indices[key] || 0) + 1;
+                            const idx = indices[key];
+                            const label = mapRoleLabel(key);
+                            return idx > 1 ? label + ' ' + idx : label;
+                        }
+
+                        const director = members.find(m => m.role === 'director');
+                        const managers = members.filter(m => m.role === 'manager');
+                        const staffs = members.filter(m => m.role === 'staff');
+                        const interns = members.filter(m => m.role === 'intern');
+
+                        function createCompanyNode(member) {
+                            const node = document.createElement('div');
+                            node.className = 'family-member';
+
+                            const photoDiv = document.createElement('div');
+                            photoDiv.className = 'family-member-photo';
+                            if (member.photo) {
+                                const img = document.createElement('img');
+                                img.src = '/storage/' + member.photo;
+                                img.alt = member.name;
+                                photoDiv.appendChild(img);
+                            } else {
+                                const img = document.createElement('img');
+                                img.src = '/images/company-avatar.svg';
+                                img.alt = member.name;
+                                photoDiv.appendChild(img);
+                            }
+
+                            const actionsContainer = document.createElement('div');
+                            actionsContainer.className = 'action-buttons-container';
+
+                            const editButton = document.createElement('button');
+                            editButton.className = 'action-button edit action-button-bottom-right';
+                            editButton.innerHTML =
+                                '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>';
+                            editButton.title = 'Edit';
+                            editButton.onclick = () => openEditCompanyModal(member.id);
+                            actionsContainer.appendChild(editButton);
+
+                            const deleteButton = document.createElement('button');
+                            deleteButton.className = 'action-button delete action-button-bottom-left';
+                            deleteButton.innerHTML =
+                                '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>';
+                            deleteButton.title = 'Hapus';
+                            deleteButton.onclick = () => {
+                                if (!confirm('Hapus anggota ini?')) return;
+                                const form = document.createElement('form');
+                                form.method = 'POST';
+                                form.action = `/user/family/${member.family_id}/company-members/${member.id}`;
+                                const token = document.querySelector('meta[name="csrf-token"]').content;
+                                const methodInput = document.createElement('input');
+                                methodInput.type = 'hidden';
+                                methodInput.name = '_method';
+                                methodInput.value = 'DELETE';
+                                const tokenInput = document.createElement('input');
+                                tokenInput.type = 'hidden';
+                                tokenInput.name = '_token';
+                                tokenInput.value = token;
+                                form.appendChild(methodInput);
+                                form.appendChild(tokenInput);
+                                document.body.appendChild(form);
+                                form.submit();
+                            };
+                            actionsContainer.appendChild(deleteButton);
+
+                            node.appendChild(actionsContainer);
+
+                            const nameDiv = document.createElement('div');
+                            nameDiv.className = 'family-member-name';
+                            nameDiv.textContent = member.name;
+                            const roleDiv = document.createElement('div');
+                            roleDiv.className = 'family-member-relation';
+                            roleDiv.textContent = numberedLabelFor(member);
+
+                            node.appendChild(photoDiv);
+                            node.appendChild(nameDiv);
+                            node.appendChild(roleDiv);
+
+                            return node;
+                        }
+
+                        // Render director level
+                        if (director) {
+                            const dirLevel = document.createElement('div');
+                            dirLevel.className = 'family-level';
+                            dirLevel.appendChild(createCompanyNode(director));
+                            container.appendChild(dirLevel);
+                        }
+
+                        // Connector to managers
+                        if (managers.length > 0) {
+                            const conn = document.createElement('div');
+                            conn.className = 'family-connector';
+                            container.appendChild(conn);
+                            const mgrLevel = document.createElement('div');
+                            mgrLevel.className = 'family-level';
+                            managers.forEach(m => mgrLevel.appendChild(createCompanyNode(m)));
+                            container.appendChild(mgrLevel);
+                        }
+
+                        // Connector to staffs
+                        if (staffs.length + interns.length > 0) {
+                            const conn2 = document.createElement('div');
+                            conn2.className = 'family-connector';
+                            container.appendChild(conn2);
+                            const staffLevel = document.createElement('div');
+                            staffLevel.className = 'family-level';
+                            staffs.forEach(s => staffLevel.appendChild(createCompanyNode(s)));
+                            interns.forEach(i => staffLevel.appendChild(createCompanyNode(i)));
+                            container.appendChild(staffLevel);
+                        }
+                    });
+
+                    function openEditCompanyModal(memberId) {
+                        // fetch member data
+                        fetch(`/user/family/{{ $family->id }}/company-members/${memberId}/edit`, {
+                                headers: {
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                }
+                            })
+                            .then(r => r.json())
+                            .then(member => {
+                                document.getElementById('edit_company_name').value = member.name;
+                                document.getElementById('edit_company_role').value = member.role;
+                                document.getElementById('edit_company_description').value = member.description || '';
+                                const form = document.getElementById('editCompanyForm');
+                                form.action = `/user/family/{{ $family->id }}/company-members/${member.id}`;
+                                document.getElementById('editCompanyModal').classList.remove('hidden');
+                            })
+                            .catch(() => alert('Gagal memuat data anggota'));
+                    }
+
+                    function closeAddCompanyModal() {
+                        document.getElementById('addCompanyModal').classList.add('hidden');
+                        document.getElementById('addCompanyForm').reset();
+                    }
+
+                    function closeEditCompanyModal() {
+                        document.getElementById('editCompanyModal').classList.add('hidden');
+                        document.getElementById('editCompanyForm').reset();
+                    }
+                </script>
+            @endif
         @endsection
