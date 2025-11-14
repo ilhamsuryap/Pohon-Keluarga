@@ -5,12 +5,24 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
-                    <h2 class="text-2xl font-semibold mb-6">Buat Keluarga Baru</h2>
+                    @php
+                        $type = old('type', request()->query('type', 'family'));
+                        $isTypeLocked = request()->has('type');
+                    @endphp
+                    <h2 class="text-2xl font-semibold mb-6">
+                        {{ $type === 'company' ? 'Buat Perusahaan Baru' : 'Buat Keluarga Baru' }}
+                    </h2>
 
                     <form action="{{ route('user.family.store') }}" method="POST" x-data="groupForm()">
                         @csrf
+                        
+                        <!-- Hidden input untuk type jika sudah ditentukan -->
+                        @if($isTypeLocked)
+                            <input type="hidden" name="type" value="{{ $type }}">
+                        @endif
 
                         <div class="space-y-6">
+                            @if(!$isTypeLocked)
                             <div>
                                 <label for="type" class="block text-sm font-medium text-gray-700">Jenis Grup</label>
                                 <select name="type" id="type" x-model="type"
@@ -22,9 +34,10 @@
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
                             </div>
+                            @endif
 
                             <!-- Family specific initial member inputs -->
-                            <div x-show="type === 'family'" x-cloak class="space-y-4">
+                            <div x-show="type === 'family'" @if($isTypeLocked && $type === 'family') style="display: block;" @else x-cloak @endif class="space-y-4">
                                 <h3 class="text-lg font-medium">Informasi Awal Keluarga</h3>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700">Nama Ayah</label>
@@ -56,7 +69,7 @@
                             </div>
 
                             <!-- Company specific inputs -->
-                            <div x-show="type === 'company'" x-cloak class="space-y-4">
+                            <div x-show="type === 'company'" @if($isTypeLocked && $type === 'company') style="display: block;" @else x-cloak @endif class="space-y-4">
                                 <h3 class="text-lg font-medium">Informasi Perusahaan</h3>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700">Direktur</label>
@@ -115,8 +128,9 @@
                                 </div>
                             </div>
                             <div>
-                                <label for="family_name" class="block text-sm font-medium text-gray-700">Nama
-                                    Keluarga</label>
+                                <label for="family_name" class="block text-sm font-medium text-gray-700">
+                                    Nama {{ $type === 'company' ? 'Perusahaan' : 'Keluarga' }}
+                                </label>
                                 <input type="text" name="family_name" id="family_name"
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                                     required value="{{ old('family_name') }}">
@@ -126,8 +140,9 @@
                             </div>
 
                             <div>
-                                <label for="description" class="block text-sm font-medium text-gray-700">Deskripsi
-                                    Keluarga</label>
+                                <label for="description" class="block text-sm font-medium text-gray-700">
+                                    Deskripsi {{ $type === 'company' ? 'Perusahaan' : 'Keluarga' }}
+                                </label>
                                 <textarea name="description" id="description" rows="4"
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">{{ old('description') }}</textarea>
                                 @error('description')
@@ -142,7 +157,7 @@
                                 </a>
                                 <button type="submit"
                                     class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                                    Buat Keluarga
+                                    Buat {{ $type === 'company' ? 'Perusahaan' : 'Keluarga' }}
                                 </button>
                             </div>
                         </div>
@@ -157,7 +172,8 @@
     <script>
         function groupForm() {
             return {
-                type: '{{ old('type', 'family') }}',
+                type: '{{ old('type', request()->query('type', 'family')) }}',
+                typeLocked: {{ $isTypeLocked ? 'true' : 'false' }},
                 children: [],
                 managers: [],
                 staffs: [],

@@ -16,7 +16,7 @@ class HomeController extends Controller
     public function index()
     {
         if (auth()->check()) {
-            return redirect()->route('welcome');
+            return redirect()->route('dashboard');
         }
 
         $metaData = [

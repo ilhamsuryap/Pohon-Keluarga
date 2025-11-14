@@ -38,7 +38,7 @@
                         @endif
 
                         @if (Auth::user()->isApproved())
-                            <x-nav-link href="{{ url('/') }}" :active="request()->is('/')">
+                            <x-nav-link href="{{ route('dashboard') }}" :active="request()->routeIs('dashboard') || request()->routeIs('user.dashboard')">
                                 {{ __('Home') }}
                             </x-nav-link>
                             <x-nav-link :href="route('user.family.index')" :active="request()->routeIs('user.family.*')" class="flex items-center">
@@ -131,7 +131,7 @@
                     </x-responsive-nav-link>
                 @endif
                 @if (Auth::user()->isApproved())
-                    <x-responsive-nav-link href="{{ url('/') }}" :active="request()->is('/')">
+                    <x-responsive-nav-link href="{{ route('dashboard') }}" :active="request()->routeIs('dashboard') || request()->routeIs('user.dashboard')">
                         {{ __('Home') }}
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('user.family.index')" :active="request()->routeIs('user.family.*')" class="flex items-center">

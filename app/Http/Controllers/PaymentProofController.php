@@ -73,6 +73,9 @@ class PaymentProofController extends Controller
             // Send WhatsApp notification to admin
             $this->whatsappService->notifyAdminNewPayment($user);
 
+            // Send WhatsApp notification to user
+            $this->whatsappService->notifyUserVerificationPending($user);
+
             return redirect()->route('pending-approval')
                 ->with('success', 'Bukti pembayaran berhasil diupload! Admin akan memverifikasi pembayaran Anda dan Anda akan mendapat notifikasi WhatsApp setelah disetujui.');
 

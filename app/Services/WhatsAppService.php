@@ -15,7 +15,7 @@ class WhatsAppService
     {
         $this->apiUrl = 'https://api.quods.id/api';
         $this->apiKey = 'TMeTyUimv75LmlHRlCutowWU2z86QW';
-        $this->deviceKey = 'RTeFUUbC5ZH6hUN';
+        $this->deviceKey = 'UMSZSzMyen40UdD';
     }
 
     private function formatPhoneNumber(string $phoneNumber): string
@@ -128,17 +128,42 @@ class WhatsAppService
     }
 
     /**
+     * Send notification to user that payment proof is being verified
+     */
+    public function notifyUserVerificationPending($user)
+    {
+        $message = "\xF0\x9F\x93\xA6 *BUKTI PEMBAYARAN DITERIMA*\n\n";
+        $message .= "Halo {$user->name},\n\n";
+        $message .= "\xE2\x9C\x85 Bukti pembayaran Anda telah berhasil kami terima.\n\n";
+        $message .= "\xF0\x9F\x92\xB0 *Jumlah Pembayaran:* Rp " . number_format($user->payment_amount, 0, ',', '.') . "\n";
+        if (!empty($user->payment_code)) {
+            $message .= "\xF0\x9F\x94\xA2 *Kode Unik:* {$user->payment_code}\n";
+        }
+        $message .= "\n";
+        $message .= "\xF0\x9F\x93\x9D Akun Anda saat ini sedang dalam proses *verifikasi oleh admin*.\n\n";
+        $message .= "\xE2\x8F\xB3 Mohon menunggu, kami akan mengirimkan notifikasi melalui WhatsApp setelah akun Anda disetujui.\n\n";
+        $message .= "Terima kasih atas kesabaran Anda! \xF0\x9F\x99\x8F";
+
+        return $this->sendDirect($user->phone, $message);
+    }
+
+    /**
      * Send approval notification to user
      */
     public function notifyUserApproval($user)
     {
+        // Determine greeting based on name (simple approach)
+        $sapaan = "Bapak/Ibu";
+        
         $message = "\xF0\x9F\x8E\x89 *SELAMAT! AKUN ANDA TELAH DISETUJUI*\n\n";
-        $message .= "Halo {$user->name},\n\n";
-        $message .= "Pembayaran Anda telah diverifikasi dan akun Anda telah disetujui!\n\n";
-        $message .= "\xE2\x9C\x85 *Status:* Akun Aktif\n";
-        $message .= "\xF0\x9F\x92\xB0 *Jumlah Dibayar:* Rp " . number_format($user->payment_amount, 0, ',', '.') . "\n\n";
-        $message .= "Anda sekarang dapat mengakses semua fitur aplikasi Pohon Keluarga.\n\n";
-        $message .= "Terima kasih telah bergabung dengan kami! \xF0\x9F\x99\x8F";
+        $message .= "Terima kasih {$sapaan} {$user->name} sudah melakukan pendaftaran akun,\n\n";
+        $message .= "\xF0\x9F\x93\x9D Berikut ini data pendaftaran anda :\n\n";
+        $message .= "\xF0\x9F\x91\xA4 *Nama :* {$user->name}\n";
+        $message .= "\xF0\x9F\x93\xB1 *Phone :* " . ($user->phone ?? '-') . "\n\n";
+        $message .= "\xF0\x9F\x8C\x90 *Login:*\n";
+        $message .= "https://famtreee.co.id/login\n\n";
+        $message .= "\xF0\x9F\x94\x92 *Username:* {$user->email}\n\n";
+        $message .= "\xF0\x9F\x8C\x9F Selamat menebar manfaat untuk kebaikan \xF0\x9F\x99\x8F";
 
         return $this->sendDirect($user->phone, $message);
     }

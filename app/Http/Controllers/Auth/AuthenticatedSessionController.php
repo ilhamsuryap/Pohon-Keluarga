@@ -41,7 +41,8 @@ class AuthenticatedSessionController extends Controller
             return redirect()->route('pending-approval');
         }
 
-        return redirect()->intended('/');
+        // Redirect to dashboard (which will handle role-based redirection)
+        return redirect()->intended(route('dashboard'));
     }
 
     /**

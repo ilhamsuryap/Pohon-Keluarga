@@ -100,6 +100,14 @@ class FamilyController extends Controller
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
+        // Check if this is the first member - must be father
+        $memberCount = $family->members()->count();
+        if ($memberCount === 0 && $request->relation !== 'father') {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Anggota pertama yang ditambahkan harus seorang ayah.');
+        }
+
         // Check if father already exists for this family (mother can be multiple)
         if ($request->relation === 'father') {
             $existingFather = $family->members()->where('relation', 'father')->first();
