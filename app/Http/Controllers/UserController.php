@@ -20,12 +20,21 @@ class UserController extends Controller
     public function dashboard()
     {
         $user = Auth::user();
-        $families = Family::where('user_id', $user->id)->with('members')->get();
+        $families = Family::where('user_id', $user->id)
+            ->where('type', 'family')
+            ->with('members')->get();
         $totalMembers = $families->sum(function($family) {
             return $family->members->count();
         });
 
-        return view('user.dashboard', compact('families', 'totalMembers'));
+        $companies = Family::where('user_id', $user->id)
+            ->where('type', 'company')
+            ->with('members')->get();
+        $totalCompanyMembers = $companies->sum(function($company) {
+            return $company->members->count();
+        });
+
+        return view('user.dashboard', compact('families', 'totalMembers', 'companies', 'totalCompanyMembers'));
     }
 
     public function pendingApproval()
@@ -36,8 +45,15 @@ class UserController extends Controller
     public function familyIndex()
     {
         $user = Auth::user();
-        $families = Family::where('user_id', $user->id)->withCount('members')->get();
-        return view('user.family.index', compact('families'));
+        $families = Family::where('user_id', $user->id)
+            ->where('type', 'family')
+            ->withCount('members')
+            ->get();
+        $companies = Family::where('user_id', $user->id)
+            ->where('type', 'company')
+            ->withCount('members')
+            ->get();
+        return view('user.family.index', compact('families', 'companies'));
     }
 
     public function familyCreate()

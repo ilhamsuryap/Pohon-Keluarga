@@ -12,7 +12,7 @@
                             <p class="text-blue-100">Silsilah Keluarga</p>
                         </div>
                         <div class="flex space-x-4">
-                            <button onclick="document.getElementById('addModal').classList.remove('hidden')"
+                            <button onclick="openAddModal()"
                                 class="inline-flex items-center px-6 py-3 border border-transparent text-sm font-medium rounded-xl bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white transition-all duration-200 transform hover:scale-105 shadow-lg">
                                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -465,7 +465,7 @@
                         </svg>
                         <h3 class="text-xl font-semibold mb-2">Belum Ada Anggota Keluarga</h3>
                         <p class="mb-6">Mulai membangun pohon keluarga Anda dengan menambahkan anggota pertama</p>
-                        <button onclick="document.getElementById('addModal').classList.remove('hidden')" class="btn-primary text-white">
+                        <button onclick="openAddModal()" class="btn-primary text-white">
                             Tambah Anggota Pertama
                         </button>
                     </div>
@@ -558,7 +558,7 @@
                             addButton.innerHTML = '+';
                             addButton.title = 'Tambah Anggota';
                             addButton.onclick = () => {
-                                document.getElementById('addModal').classList.remove('hidden');
+                                openAddModal();
                             };
                             actionsContainer.appendChild(addButton);
                         }
@@ -730,7 +730,7 @@
                         addButton.innerHTML = '+';
                         addButton.title = 'Tambah Anggota';
                         addButton.onclick = () => {
-                            document.getElementById('addModal').classList.remove('hidden');
+                            openAddModal();
                         };
                         actionsContainer.appendChild(addButton);
                     }
@@ -930,16 +930,25 @@
                             <div>
                                 <label for="add_relation" class="block text-sm font-semibold text-gray-700 mb-2">Hubungan
                                     Keluarga</label>
+                                @php
+                                    $hasMembers = $familyMembers->count() > 0;
+                                    $hasFather = $familyMembers->where('relation', 'father')->count() > 0;
+                                @endphp
                                 <select name="relation" id="add_relation" required
                                     class="form-input w-full px-4 py-3 text-gray-900">
                                     <option value="">Pilih Hubungan</option>
-                                    <option value="father" {{ old('relation') == 'father' ? 'selected' : '' }}>Ayah
+                                    <option value="father" {{ old('relation', !$hasMembers ? 'father' : '') == 'father' ? 'selected' : '' }} {{ $hasFather ? 'disabled' : '' }}>Ayah
                                     </option>
-                                    <option value="mother" {{ old('relation') == 'mother' ? 'selected' : '' }}>Ibu
+                                    <option value="mother" {{ old('relation') == 'mother' ? 'selected' : '' }} {{ !$hasMembers ? 'disabled' : '' }}>Ibu
                                     </option>
-                                    <option value="child" {{ old('relation') == 'child' ? 'selected' : '' }}>Anak
+                                    <option value="child" {{ old('relation') == 'child' ? 'selected' : '' }} {{ !$hasMembers ? 'disabled' : '' }}>Anak
                                     </option>
                                 </select>
+                                @if(!$hasMembers)
+                                    <p class="mt-1 text-sm text-blue-600">Anggota pertama harus seorang ayah.</p>
+                                @elseif($hasFather)
+                                    <p class="mt-1 text-sm text-gray-500">Ayah sudah ada. Anda dapat menambahkan ibu atau anak.</p>
+                                @endif
                                 @error('relation')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
@@ -948,14 +957,22 @@
                             <div>
                                 <label for="add_gender" class="block text-sm font-semibold text-gray-700 mb-2">Jenis
                                     Kelamin</label>
-                                <select name="gender" id="add_gender" required
+                                @php
+                                    $hasMembers = $familyMembers->count() > 0;
+                                    $hasFather = $familyMembers->where('relation', 'father')->count() > 0;
+                                    $defaultGender = old('gender', !$hasMembers ? 'male' : '');
+                                @endphp
+                                <!-- Hidden input untuk memastikan value terkirim saat disabled -->
+                                <input type="hidden" name="gender" id="add_gender_hidden" value="{{ $defaultGender }}">
+                                <select id="add_gender" required
                                     class="form-input w-full px-4 py-3 text-gray-900">
                                     <option value="">Pilih Jenis Kelamin</option>
-                                    <option value="male" {{ old('gender') == 'male' ? 'selected' : '' }}>Laki-laki
+                                    <option value="male" {{ $defaultGender == 'male' ? 'selected' : '' }}>Laki-laki
                                     </option>
-                                    <option value="female" {{ old('gender') == 'female' ? 'selected' : '' }}>Perempuan
+                                    <option value="female" {{ $defaultGender == 'female' ? 'selected' : '' }}>Perempuan
                                     </option>
                                 </select>
+                                <p class="mt-1 text-sm text-gray-500" id="gender-hint">Pilih hubungan keluarga terlebih dahulu</p>
                                 @error('gender')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
@@ -1344,6 +1361,15 @@
                     document.getElementById('detailModal').classList.add('hidden');
                 }
 
+                // Function to open Add Modal
+                function openAddModal() {
+                    document.getElementById('addModal').classList.remove('hidden');
+                    // Ensure gender is set based on current relation selection
+                    setTimeout(function() {
+                        updateGenderBasedOnRelation();
+                    }, 100);
+                }
+
                 // Function to close Add Modal
                 function closeAddModal() {
                     document.getElementById('addModal').classList.add('hidden');
@@ -1356,7 +1382,24 @@
                     </svg>
                 </div>`;
                     }
+                    // Reset gender field state
+                    const genderSelect = document.getElementById('add_gender');
+                    if (genderSelect) {
+                        genderSelect.disabled = false;
+                    }
                 }
+
+                // Override the button click to ensure gender is set when modal opens
+                const originalButtonClick = window.onclick;
+                document.addEventListener('click', function(e) {
+                    // Check if the clicked element opens the add modal
+                    if (e.target.closest('button[onclick*="addModal"]') || 
+                        e.target.closest('button')?.onclick?.toString().includes('addModal')) {
+                        setTimeout(function() {
+                            updateGenderBasedOnRelation();
+                        }, 200);
+                    }
+                });
 
                 // Function to close Edit Modal
                 function closeEditModal() {
@@ -1372,8 +1415,85 @@
                     }
                 }
 
-                // Initialize when document is ready
+                // Auto-set gender based on relation selection
+                function updateGenderBasedOnRelation() {
+                    const relationSelect = document.getElementById('add_relation');
+                    const genderSelect = document.getElementById('add_gender');
+                    const genderHidden = document.getElementById('add_gender_hidden');
+                    const genderHint = document.getElementById('gender-hint');
+
+                    if (!relationSelect || !genderSelect || !genderHidden || !genderHint) return;
+
+                    const relation = relationSelect.value;
+                    
+                    if (relation === 'father') {
+                        genderSelect.value = 'male';
+                        genderHidden.value = 'male';
+                        genderSelect.disabled = true;
+                        genderHint.textContent = 'Ayah otomatis berjenis kelamin Laki-laki';
+                        genderHint.className = 'mt-1 text-sm text-gray-500';
+                    } else if (relation === 'mother') {
+                        genderSelect.value = 'female';
+                        genderHidden.value = 'female';
+                        genderSelect.disabled = true;
+                        genderHint.textContent = 'Ibu otomatis berjenis kelamin Perempuan';
+                        genderHint.className = 'mt-1 text-sm text-gray-500';
+                    } else if (relation === 'child') {
+                        genderSelect.disabled = false;
+                        if (!genderSelect.value) {
+                            genderSelect.value = '';
+                            genderHidden.value = '';
+                        } else {
+                            genderHidden.value = genderSelect.value;
+                        }
+                        genderHint.textContent = 'Pilih jenis kelamin anak';
+                        genderHint.className = 'mt-1 text-sm text-gray-500';
+                    } else {
+                        genderSelect.value = '';
+                        genderHidden.value = '';
+                        genderSelect.disabled = false;
+                        genderHint.textContent = 'Pilih hubungan keluarga terlebih dahulu';
+                        genderHint.className = 'mt-1 text-sm text-gray-500';
+                    }
+                }
+
                 document.addEventListener('DOMContentLoaded', function() {
+                    const relationSelect = document.getElementById('add_relation');
+                    const genderSelect = document.getElementById('add_gender');
+                    const genderHidden = document.getElementById('add_gender_hidden');
+
+                    if (relationSelect && genderSelect && genderHidden) {
+                        // Set initial state when page loads
+                        updateGenderBasedOnRelation();
+
+                        // Update when relation changes
+                        relationSelect.addEventListener('change', function() {
+                            updateGenderBasedOnRelation();
+                        });
+
+                        // Update hidden input when gender select changes (for child)
+                        genderSelect.addEventListener('change', function() {
+                            if (!genderSelect.disabled) {
+                                genderHidden.value = this.value;
+                            }
+                        });
+                    }
+
+                    // Also update when modal is opened (in case it's opened via button click)
+                    const addModal = document.getElementById('addModal');
+                    if (addModal) {
+                        // Use MutationObserver to detect when modal is shown
+                        const observer = new MutationObserver(function(mutations) {
+                            mutations.forEach(function(mutation) {
+                                if (!addModal.classList.contains('hidden')) {
+                                    // Modal is now visible, update gender
+                                    setTimeout(updateGenderBasedOnRelation, 100);
+                                }
+                            });
+                        });
+                        observer.observe(addModal, { attributes: true, attributeFilter: ['class'] });
+                    }
+
                     // Close modals when clicking outside
                     window.addEventListener('click', function(event) {
                         const modals = ['addModal', 'editModal', 'detailModal'];
