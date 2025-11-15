@@ -58,6 +58,11 @@ class User extends Authenticatable
         return $this->hasMany(Family::class);
     }
 
+    public function companies()
+    {
+        return $this->hasMany(Company::class);
+    }
+
     public function isAdmin()
     {
         return $this->role === 'admin';

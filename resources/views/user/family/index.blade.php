@@ -83,7 +83,7 @@
                             <div class="border-b border-gray-200 pb-6 mb-6 last:border-0 last:pb-0 last:mb-0">
                                 <div class="flex justify-between items-start">
                                     <div>
-                                        <h2 class="text-xl font-semibold text-gray-900">{{ $company->family_name }}</h2>
+                                        <h2 class="text-xl font-semibold text-gray-900">{{ $company->company_name }}</h2>
 
                                         @if ($company->description)
                                             <p class="text-gray-600 mt-2">{{ $company->description }}</p>
@@ -91,15 +91,15 @@
                                         <p class="text-sm text-gray-500 mt-1">{{ $company->members_count }} anggota</p>
                                     </div>
                                     <div class="flex space-x-3">
-                                        <a href="{{ route('user.family.show', $company) }}"
+                                        <a href="{{ route('user.company.show', $company) }}"
                                             class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
                                             Lihat
                                         </a>
-                                        <a href="{{ route('user.family.edit', $company) }}"
+                                        <a href="{{ route('user.company.edit', $company) }}"
                                             class="inline-flex items-center px-4 py-2 bg-gray-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition ease-in-out duration-150">
                                             Edit
                                         </a>
-                                        <form action="{{ route('user.family.destroy', $company) }}" method="POST"
+                                        <form action="{{ route('user.company.destroy', $company) }}" method="POST"
                                             class="inline">
                                             @csrf
                                             @method('DELETE')
@@ -116,7 +116,7 @@
                             <div class="text-center py-8">
                                 <h3 class="text-lg font-medium text-gray-900 mb-2">Belum ada perusahaan</h3>
                                 <p class="text-gray-600 mb-4">Mulai buat struktur perusahaan Anda sekarang.</p>
-                                <a href="{{ route('user.family.create') }}?type=company"
+                                <a href="{{ route('user.company.create') }}"
                                     class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-teal-500 to-blue-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:from-teal-600 hover:to-blue-600 transition ease-in-out duration-150">
                                     Buat Perusahaan
                                 </a>

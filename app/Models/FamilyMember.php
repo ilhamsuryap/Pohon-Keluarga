@@ -18,6 +18,7 @@ class FamilyMember extends Model
         'death_date',
         'relation',
         'parent_id',
+        'child_order',
         'photo',
         'description',
         'has_children',

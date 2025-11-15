@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Family;
+use App\Models\Company;
 use App\Models\FamilyMember;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,14 +22,12 @@ class UserController extends Controller
     {
         $user = Auth::user();
         $families = Family::where('user_id', $user->id)
-            ->where('type', 'family')
             ->with('members')->get();
         $totalMembers = $families->sum(function($family) {
             return $family->members->count();
         });
 
-        $companies = Family::where('user_id', $user->id)
-            ->where('type', 'company')
+        $companies = Company::where('user_id', $user->id)
             ->with('members')->get();
         $totalCompanyMembers = $companies->sum(function($company) {
             return $company->members->count();
@@ -46,11 +45,9 @@ class UserController extends Controller
     {
         $user = Auth::user();
         $families = Family::where('user_id', $user->id)
-            ->where('type', 'family')
             ->withCount('members')
             ->get();
-        $companies = Family::where('user_id', $user->id)
-            ->where('type', 'company')
+        $companies = Company::where('user_id', $user->id)
             ->withCount('members')
             ->get();
         return view('user.family.index', compact('families', 'companies'));
@@ -59,118 +56,82 @@ class UserController extends Controller
     public function familyCreate()
     {
         $user = Auth::user();
+        // Check if user already has a family
         if (Family::where('user_id', $user->id)->exists()) {
             return redirect()->route('user.family.index')
                            ->with('error', 'Anda hanya dapat membuat satu keluarga.');
         }
-        return view('user.family.create');
+        return view('user.family.create', ['type' => 'family']);
     }
 
     public function familyStore(Request $request)
     {
         $user = Auth::user();
+        $validated = $request->validate([
+            'family_name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'privacy' => ['nullable', Rule::in(['privat', 'publik', 'friend_only'])],
+        ]);
+
+        // Check if user already has a family
         if (Family::where('user_id', $user->id)->exists()) {
             return redirect()->route('user.family.index')
                            ->with('error', 'Anda hanya dapat membuat satu keluarga.');
         }
 
-        $validated = $request->validate([
-            'family_name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'type' => ['required', Rule::in(['family','company'])],
-        ]);
-
-        // create the family/group
+        // create the family
         $family = Family::create(array_merge($validated, ['user_id' => $user->id]));
 
-        // If creating a family, optionally create father/mother/children entries (simple initial creation)
-        if ($validated['type'] === 'family') {
-            // father
-            if ($request->filled('father_name')) {
+        // Optionally create father/mother/children entries (simple initial creation)
+        // father
+        if ($request->filled('father_name')) {
+            $family->members()->create([
+                'name' => $request->input('father_name'),
+                'relation' => 'father',
+                'gender' => 'male'
+            ]);
+        }
+        // mother
+        if ($request->filled('mother_name')) {
+            $family->members()->create([
+                'name' => $request->input('mother_name'),
+                'relation' => 'mother',
+                'gender' => 'female'
+            ]);
+        }
+        // children
+        if ($request->filled('children')) {
+            foreach ((array) $request->input('children') as $childName) {
+                if (trim($childName) === '') continue;
                 $family->members()->create([
-                    'name' => $request->input('father_name'),
-                    'relation' => 'father',
+                    'name' => $childName,
+                    'relation' => 'child',
                     'gender' => 'male'
                 ]);
-            }
-            // mother
-            if ($request->filled('mother_name')) {
-                $family->members()->create([
-                    'name' => $request->input('mother_name'),
-                    'relation' => 'mother',
-                    'gender' => 'female'
-                ]);
-            }
-            // children
-            if ($request->filled('children')) {
-                foreach ((array) $request->input('children') as $childName) {
-                    if (trim($childName) === '') continue;
-                    $family->members()->create([
-                        'name' => $childName,
-                        'relation' => 'child',
-                        'gender' => 'male'
-                    ]);
-                }
-            }
-        }
-
-        // If creating a company, create group members in group_members table
-        if ($validated['type'] === 'company') {
-            // director
-            if ($request->filled('company_director')) {
-                \App\Models\GroupMember::create([
-                    'family_id' => $family->id,
-                    'name' => $request->input('company_director'),
-                    'role' => 'director'
-                ]);
-            }
-
-            // managers
-            if ($request->filled('company_managers')) {
-                foreach ((array) $request->input('company_managers') as $m) {
-                    if (trim($m) === '') continue;
-                    \App\Models\GroupMember::create([
-                        'family_id' => $family->id,
-                        'name' => $m,
-                        'role' => 'manager'
-                    ]);
-                }
-            }
-
-            // staffs
-            if ($request->filled('company_staffs')) {
-                foreach ((array) $request->input('company_staffs') as $s) {
-                    if (trim($s) === '') continue;
-                    \App\Models\GroupMember::create([
-                        'family_id' => $family->id,
-                        'name' => $s,
-                        'role' => 'staff'
-                    ]);
-                }
-            }
-
-            // interns
-            if ($request->filled('company_interns')) {
-                foreach ((array) $request->input('company_interns') as $i) {
-                    if (trim($i) === '') continue;
-                    \App\Models\GroupMember::create([
-                        'family_id' => $family->id,
-                        'name' => $i,
-                        'role' => 'intern'
-                    ]);
-                }
             }
         }
 
         return redirect()->route('user.family.show', $family)
-                        ->with('success', 'Grup berhasil dibuat.');
+                        ->with('success', 'Keluarga berhasil dibuat.');
     }
 
-    public function familyShow(Family $family)
+    public function familyShow(Family $family, FamilyTreeService $familyTreeService)
     {
         $this->authorize('view', $family);
+        
         $familyMembers = $family->members()->get();
-        return view('user.family.show', compact('family', 'familyMembers'));
+        
+        // Build tree data for D3.js visualization
+        $treeJson = null;
+        try {
+            $tree = $familyTreeService->buildFamilyTree($family->id);
+            $treeJson = json_encode($tree, JSON_UNESCAPED_UNICODE | JSON_HEX_APOS | JSON_HEX_QUOT);
+        } catch (\Exception $e) {
+            \Log::error('Error building tree: ' . $e->getMessage());
+            $treeJson = null;
+        }
+        
+        return view('user.family.show', compact('family', 'familyMembers', 'treeJson'));
     }
 
     public function familyTree(Request $request, FamilyTreeService $familyTreeService)
@@ -201,6 +162,7 @@ class UserController extends Controller
         $validated = $request->validate([
             'family_name' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'privacy' => ['nullable', Rule::in(['privat', 'publik', 'friend_only'])],
         ]);
 
         $family->update($validated);

@@ -12,16 +12,35 @@ class GroupMember extends Model
     protected $table = 'group_members';
 
     protected $fillable = [
-        'family_id',
+        'company_id',
         'name',
+        'nik',
+        'gender',
+        'birth_date',
         'role',
+        'position',
         'relation_type',
+        'parent_id',
         'photo',
         'description',
     ];
 
-    public function group()
+    protected $casts = [
+        'birth_date' => 'date',
+    ];
+
+    public function company()
     {
-        return $this->belongsTo(Family::class, 'family_id');
+        return $this->belongsTo(Company::class, 'company_id');
+    }
+
+    public function parent()
+    {
+        return $this->belongsTo(GroupMember::class, 'parent_id');
+    }
+
+    public function children()
+    {
+        return $this->hasMany(GroupMember::class, 'parent_id');
     }
 }

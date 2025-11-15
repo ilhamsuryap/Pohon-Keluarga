@@ -13,7 +13,7 @@ class Family extends Model
         'user_id',
         'family_name',
         'description',
-        'type', // 'family' or 'company'
+        'privacy', // 'privat', 'publik', or 'friend_only'
     ];
 
     public function user()
@@ -23,11 +23,6 @@ class Family extends Model
 
     public function members()
     {
-        // Return relation based on group type. Default to family members for backward compatibility.
-        if ($this->type === 'company') {
-            return $this->hasMany(GroupMember::class, 'family_id');
-        }
-
         return $this->hasMany(FamilyMember::class, 'family_id');
     }
 

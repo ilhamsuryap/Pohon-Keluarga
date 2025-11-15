@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Family;
 use App\Models\FamilyMember;
+use App\Models\GroupMember;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
@@ -62,7 +63,7 @@ class FamilyTreeService
         // 1) Kumpulkan semua keluarga yang terhubung transitif berdasarkan NIK
         $connectedFamilyIds = $this->collectConnectedFamilyIds($familyId);
         $members = FamilyMember::whereIn('family_id', $connectedFamilyIds)->get([
-            'id','family_id','name','nik','gender','birth_date','death_date','relation','photo','description'
+            'id','family_id','name','nik','gender','birth_date','death_date','relation','parent_id','child_order','photo','description'
         ]);
 
         if ($members->isEmpty()) {
@@ -165,9 +166,25 @@ class FamilyTreeService
                 }
             }
 
-            // Bangun anak: jika anak punya family lanjutan, render dengan pasangannya
-            $childrenNodes = [];
+            // Bangun anak: kelompokkan berdasarkan parent_id
+            // Children dengan parent_id akan ditambahkan ke mother yang sesuai
+            // Children tanpa parent_id akan ditambahkan ke couple node (default)
+            $childrenByParentId = [];
+            $childrenWithoutParent = [];
+            
             foreach (($info['children'] ?? collect()) as $child) {
+                if ($child->parent_id) {
+                    if (!isset($childrenByParentId[$child->parent_id])) {
+                        $childrenByParentId[$child->parent_id] = [];
+                    }
+                    $childrenByParentId[$child->parent_id][] = $child;
+                } else {
+                    $childrenWithoutParent[] = $child;
+                }
+            }
+
+            // Helper function untuk membangun child node
+            $buildChildNode = function($child) use ($buildSubtree, $childNikToFamily) {
                 $nextFamilyId = ($child->nik && isset($childNikToFamily[$child->nik])) ? $childNikToFamily[$child->nik] : null;
                 if ($nextFamilyId) {
                     $sub = $buildSubtree($nextFamilyId);
@@ -175,17 +192,53 @@ class FamilyTreeService
                         // If the child becomes a parent in another family, use that family structure
                         $childNode = $sub;
                         $childNode['birth_date'] = optional($child->birth_date)->format('Y-m-d');
-                        $childrenNodes[] = $childNode;
-                        continue;
+                        return $childNode;
                     }
                 }
                 // leaf child
                 $childNode = $this->createPersonNode($child);
                 $childNode['birth_date'] = optional($child->birth_date)->format('Y-m-d');
-                $childrenNodes[] = $childNode;
+                $childNode['child_order'] = $child->child_order;
+                return $childNode;
+            };
+
+            // Build children nodes for each mother (based on parent_id)
+            $motherChildrenMap = [];
+            foreach ($childrenByParentId as $parentId => $children) {
+                $childrenNodes = [];
+                foreach ($children as $child) {
+                    $childrenNodes[] = $buildChildNode($child);
+                }
+                // Sort by child_order first, then by birth_date
+                usort($childrenNodes, function ($a, $b) {
+                    $aOrder = $a['child_order'] ?? null;
+                    $bOrder = $b['child_order'] ?? null;
+                    // If both have child_order, sort by it
+                    if ($aOrder !== null && $bOrder !== null) {
+                        return $aOrder <=> $bOrder;
+                    }
+                    // If only one has child_order, prioritize it
+                    if ($aOrder !== null) return -1;
+                    if ($bOrder !== null) return 1;
+                    // If neither has child_order, sort by birth_date
+                    $ad = $a['birth_date'] ?? null; $bd = $b['birth_date'] ?? null;
+                    if ($ad === $bd) return 0;
+                    if ($ad === null) return 1;
+                    if ($bd === null) return -1;
+                    return strcmp($ad, $bd);
+                });
+                // Remove birth_date from output
+                foreach ($childrenNodes as &$cn) { unset($cn['birth_date']); }
+                unset($cn);
+                $motherChildrenMap[$parentId] = $childrenNodes;
             }
 
-            // Urutkan anak dari yang tertua (tanggal lebih awal) ke termuda, null di akhir
+            // Build children nodes without parent_id (default children for couple)
+            $childrenNodes = [];
+            foreach ($childrenWithoutParent as $child) {
+                $childrenNodes[] = $buildChildNode($child);
+            }
+            // Sort by birth_date
             usort($childrenNodes, function ($a, $b) {
                 $ad = $a['birth_date'] ?? null; $bd = $b['birth_date'] ?? null;
                 if ($ad === $bd) return 0;
@@ -193,24 +246,33 @@ class FamilyTreeService
                 if ($bd === null) return -1;
                 return strcmp($ad, $bd);
             });
-
-            // Hapus birth_date dari output final (tidak dipakai di view)
+            // Remove birth_date from output
             foreach ($childrenNodes as &$cn) { unset($cn['birth_date']); }
             unset($cn);
 
             // Create couple node or single parent node. Support multiple mothers.
+            // Attach children to specific mothers based on parent_id
             $motherCount = is_countable($mother) ? count($mother) : ($mother ? 1 : 0);
             if ($father && $motherCount > 0) {
                 // build mother_data as single object if one, or array of objects if more
                 if ($motherCount === 1) {
                     $mObj = $mother->first();
                     $motherData = $this->createPersonNode($mObj);
+                    // Attach children to this mother if they have parent_id pointing to her
+                    if (isset($motherChildrenMap[$mObj->id])) {
+                        $motherData['children'] = $motherChildrenMap[$mObj->id];
+                    }
                     $id = 'couple_' . $father->id . '_' . $mObj->id;
                 } else {
                     $motherData = [];
                     $ids = [];
                     foreach ($mother as $mObj) {
-                        $motherData[] = $this->createPersonNode($mObj);
+                        $mNode = $this->createPersonNode($mObj);
+                        // Attach children to this mother if they have parent_id pointing to her
+                        if (isset($motherChildrenMap[$mObj->id])) {
+                            $mNode['children'] = $motherChildrenMap[$mObj->id];
+                        }
+                        $motherData[] = $mNode;
                         $ids[] = $mObj->id;
                     }
                     $id = 'couple_' . $father->id . '_' . implode('_', $ids);
@@ -222,7 +284,7 @@ class FamilyTreeService
                     'father_data' => $this->createPersonNode($father),
                     'mother_data' => $motherData,
                     'id' => $id,
-                    'children' => $childrenNodes,
+                    'children' => $childrenNodes, // Default children (without parent_id)
                 ];
             } elseif ($father) {
                 $node = $this->createPersonNode($father);
@@ -233,12 +295,21 @@ class FamilyTreeService
                 if ($motherCount === 1) {
                     $mObj = $mother->first();
                     $motherData = $this->createPersonNode($mObj);
+                    // Attach children to this mother if they have parent_id pointing to her
+                    if (isset($motherChildrenMap[$mObj->id])) {
+                        $motherData['children'] = $motherChildrenMap[$mObj->id];
+                    }
                     $id = 'mother_only_' . $mObj->id;
                 } else {
                     $motherData = [];
                     $ids = [];
                     foreach ($mother as $mObj) {
-                        $motherData[] = $this->createPersonNode($mObj);
+                        $mNode = $this->createPersonNode($mObj);
+                        // Attach children to this mother if they have parent_id pointing to her
+                        if (isset($motherChildrenMap[$mObj->id])) {
+                            $mNode['children'] = $motherChildrenMap[$mObj->id];
+                        }
+                        $motherData[] = $mNode;
                         $ids[] = $mObj->id;
                     }
                     $id = 'mother_only_' . implode('_', $ids);
@@ -249,7 +320,7 @@ class FamilyTreeService
                     'father_data' => null,
                     'mother_data' => $motherData,
                     'id' => $id,
-                    'children' => $childrenNodes,
+                    'children' => $childrenNodes, // Default children (without parent_id)
                 ];
             } else {
                 return [
@@ -562,6 +633,58 @@ class FamilyTreeService
             return $roots[0];
         }
         return [ 'name' => 'Keluarga', 'children' => $roots ];
+    }
+
+    /**
+     * Build a company tree structure based on parent_id relationships
+     * Returns nested array suitable for d3.tree visualization
+     */
+    public function buildCompanyTree(int $companyId): array
+    {
+        $members = GroupMember::where('company_id', $companyId)->get([
+            'id', 'company_id', 'name', 'nik', 'gender', 'birth_date', 'position', 'photo', 'description', 'parent_id'
+        ]);
+
+        if ($members->isEmpty()) {
+            return ['name' => "Perusahaan $companyId", 'type' => 'company', 'children' => []];
+        }
+
+        // Build tree structure based on parent_id
+        $memberMap = [];
+        $roots = [];
+
+        // Create map of all members
+        foreach ($members as $member) {
+            $memberMap[$member->id] = [
+                'type' => 'person',
+                'id' => $member->id,
+                'name' => $member->name,
+                'nik' => $member->nik,
+                'gender' => $member->gender,
+                'birth_date' => $member->birth_date ? $member->birth_date->format('Y-m-d') : null,
+                'position' => $member->position,
+                'photo' => $member->photo,
+                'description' => $member->description,
+                'company_id' => $member->company_id,
+                'parent_id' => $member->parent_id,
+                'children' => []
+            ];
+        }
+
+        // Build tree structure
+        foreach ($members as $member) {
+            if ($member->parent_id && isset($memberMap[$member->parent_id])) {
+                $memberMap[$member->parent_id]['children'][] = &$memberMap[$member->id];
+            } else {
+                $roots[] = &$memberMap[$member->id];
+            }
+        }
+
+        // If only one root, return it directly; otherwise wrap in a container
+        if (count($roots) === 1) {
+            return $roots[0];
+        }
+        return ['name' => 'Perusahaan', 'type' => 'company', 'children' => $roots];
     }
 }
 

@@ -7,10 +7,18 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\FamilyController;
 use App\Http\Controllers\PaymentProofController;
 use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\ExploreController;
 use App\Services\WhatsAppService;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
+
+// Explore routes (public access)
+Route::get('/explore', [ExploreController::class, 'index'])->name('explore.index');
+Route::get('/explore/search/families', [ExploreController::class, 'searchFamilies'])->name('explore.search.families');
+Route::get('/explore/search/companies', [ExploreController::class, 'searchCompanies'])->name('explore.search.companies');
+Route::get('/explore/family/{family}', [ExploreController::class, 'viewFamily'])->name('explore.family.view');
+Route::get('/explore/company/{company}', [ExploreController::class, 'viewCompany'])->name('explore.company.view');
 
 // Route untuk menangani redirect setelah login
 Route::middleware(['auth'])->group(function () {
@@ -84,11 +92,22 @@ Route::middleware(['auth', 'approved'])
     Route::put('/family/{family}/members/{member}', [FamilyController::class, 'update'])->name('family.members.update');
     Route::delete('/family/{family}/members/{member}', [FamilyController::class, 'destroy'])->name('family.members.destroy');
 
-    // Company (GroupMember) Routes
-    Route::post('/family/{family}/company-members', [\App\Http\Controllers\GroupMemberController::class, 'store'])->name('family.company.members.store');
-    Route::get('/family/{family}/company-members/{member}/edit', [\App\Http\Controllers\GroupMemberController::class, 'edit'])->name('family.company.members.edit');
-    Route::put('/family/{family}/company-members/{member}', [\App\Http\Controllers\GroupMemberController::class, 'update'])->name('family.company.members.update');
-    Route::delete('/family/{family}/company-members/{member}', [\App\Http\Controllers\GroupMemberController::class, 'destroy'])->name('family.company.members.destroy');
+    // Company Routes
+    Route::get('/company', [\App\Http\Controllers\CompanyController::class, 'index'])->name('company.index');
+    Route::get('/company/create', [\App\Http\Controllers\CompanyController::class, 'create'])->name('company.create');
+    Route::post('/company', [\App\Http\Controllers\CompanyController::class, 'store'])->name('company.store');
+    Route::get('/company/{company}', [\App\Http\Controllers\CompanyController::class, 'show'])->name('company.show');
+    Route::get('/company/{company}/edit', [\App\Http\Controllers\CompanyController::class, 'edit'])->name('company.edit');
+    Route::put('/company/{company}', [\App\Http\Controllers\CompanyController::class, 'update'])->name('company.update');
+    Route::delete('/company/{company}', [\App\Http\Controllers\CompanyController::class, 'destroy'])->name('company.destroy');
+
+    // Company Member Routes
+    Route::post('/company/{company}/members', [\App\Http\Controllers\GroupMemberController::class, 'store'])->name('company.members.store');
+    Route::get('/company/{company}/members/{member}/edit', [\App\Http\Controllers\GroupMemberController::class, 'edit'])->name('company.members.edit');
+    Route::put('/company/{company}/members/{member}', [\App\Http\Controllers\GroupMemberController::class, 'update'])->name('company.members.update');
+    Route::delete('/company/{company}/members/{member}', [\App\Http\Controllers\GroupMemberController::class, 'destroy'])->name('company.members.destroy');
+    Route::post('/company/{company}/members/{member}/add-child', [\App\Http\Controllers\GroupMemberController::class, 'addChild'])->name('company.members.add-child');
+    Route::get('/company/{company}/members/positions', [\App\Http\Controllers\GroupMemberController::class, 'getPositions'])->name('company.members.positions');
 
         // Export Routes
         Route::get('/family/{family}/export/pdf', [FamilyController::class, 'exportPdf'])->name('family.export.pdf');

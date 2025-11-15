@@ -5,28 +5,30 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
-                    <h2 class="text-2xl font-semibold mb-6">Edit Keluarga</h2>
+                    <h2 class="text-2xl font-semibold mb-6">Buat Perusahaan Baru</h2>
 
-                    <form action="{{ route('user.family.update', $family) }}" method="POST">
+                    <form action="{{ route('user.company.store') }}" method="POST">
                         @csrf
-                        @method('PUT')
 
                         <div class="space-y-6">
                             <div>
-                                <label for="family_name" class="block text-sm font-medium text-gray-700">Nama Keluarga</label>
-                                <input type="text" name="family_name" id="family_name"
+                                <label for="company_name" class="block text-sm font-medium text-gray-700">
+                                    Nama Perusahaan <span class="text-red-500">*</span>
+                                </label>
+                                <input type="text" name="company_name" id="company_name"
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                    required value="{{ old('family_name', $family->family_name) }}">
-                                @error('family_name')
+                                    required value="{{ old('company_name') }}">
+                                @error('company_name')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
                             </div>
 
                             <div>
-                                <label for="description" class="block text-sm font-medium text-gray-700">Deskripsi
-                                    Keluarga</label>
+                                <label for="description" class="block text-sm font-medium text-gray-700">
+                                    Deskripsi Perusahaan
+                                </label>
                                 <textarea name="description" id="description" rows="4"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">{{ old('description', $family->description) }}</textarea>
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">{{ old('description') }}</textarea>
                                 @error('description')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
@@ -34,29 +36,29 @@
 
                             <div>
                                 <label for="privacy" class="block text-sm font-medium text-gray-700">
-                                    Privacy
+                                    Privacy Label
                                 </label>
                                 <select name="privacy" id="privacy"
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                                     <option value="">Pilih Privacy</option>
-                                    <option value="privat" {{ old('privacy', $family->privacy) == 'privat' ? 'selected' : '' }}>Privat</option>
-                                    <option value="publik" {{ old('privacy', $family->privacy) == 'publik' ? 'selected' : '' }}>Publik</option>
-                                    <option value="friend_only" {{ old('privacy', $family->privacy) == 'friend_only' ? 'selected' : '' }}>Friend Only</option>
+                                    <option value="privat" {{ old('privacy') == 'privat' ? 'selected' : '' }}>Privat</option>
+                                    <option value="publik" {{ old('privacy') == 'publik' ? 'selected' : '' }}>Publik</option>
+                                    <option value="friend_only" {{ old('privacy') == 'friend_only' ? 'selected' : '' }}>Friend Only</option>
                                 </select>
-                                <p class="mt-1 text-sm text-gray-500">Pilih tingkat privasi untuk keluarga ini</p>
+                                <p class="mt-1 text-sm text-gray-500">Pilih tingkat privasi untuk perusahaan ini</p>
                                 @error('privacy')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
                             </div>
 
                             <div class="flex items-center justify-end space-x-3">
-                                <a href="{{ route('user.family.show', $family) }}"
+                                <a href="{{ route('user.family.index') }}"
                                     class="inline-flex items-center px-4 py-2 bg-gray-200 border border-transparent rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-300 focus:bg-gray-300 active:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition ease-in-out duration-150">
                                     Batal
                                 </a>
                                 <button type="submit"
                                     class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                                    Simpan Perubahan
+                                    Buat Perusahaan
                                 </button>
                             </div>
                         </div>
@@ -66,3 +68,6 @@
         </div>
     </div>
 @endsection
+
+
+
