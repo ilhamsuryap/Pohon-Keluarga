@@ -1,43 +1,28 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="py-12">
+    <div class="py-12 bg-gradient-to-br from-purple-50/80 via-blue-50/80 to-indigo-50/80 min-h-screen">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900">
+            <div class="bg-white/80 backdrop-blur-sm overflow-hidden shadow-2xl rounded-3xl border border-white/20">
+                <div class="p-6 sm:p-8 text-gray-900">
                     @php
                         $type = old('type', request()->query('type', 'family'));
                         $isTypeLocked = request()->has('type');
                     @endphp
-                    <h2 class="text-2xl font-semibold mb-6">
+                    <h2 class="text-3xl font-bold mb-6 bg-gradient-to-r from-purple-500 via-blue-500 to-indigo-500 bg-clip-text text-transparent">
                         {{ $type === 'company' ? 'Buat Perusahaan Baru' : 'Buat Keluarga Baru' }}
                     </h2>
 
                     <form action="{{ route('user.family.store') }}" method="POST" x-data="groupForm()">
                         @csrf
                         
-                        <!-- Hidden input untuk type jika sudah ditentukan -->
-                        @if($isTypeLocked)
-                            <input type="hidden" name="type" value="{{ $type }}">
-                        @endif
+                        <!-- Hidden input untuk type -->
+                        <input type="hidden" name="type" value="{{ $type }}">
 
                         <div class="space-y-6">
-                            @if(!$isTypeLocked)
-                            <div>
-                                <label for="type" class="block text-sm font-medium text-gray-700">Jenis Grup</label>
-                                <select name="type" id="type" x-model="type"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                    <option value="family">Family</option>
-                                    <option value="company">Perusahaan</option>
-                                </select>
-                                @error('type')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
-                            @endif
 
                             <!-- Family specific initial member inputs -->
-                            <div x-show="type === 'family'" @if($isTypeLocked && $type === 'family') style="display: block;" @else x-cloak @endif class="space-y-4">
+                            <div x-show="type === 'family'" @if($type === 'family') style="display: block;" @else x-cloak @endif class="space-y-4">
                                 <h3 class="text-lg font-medium">Informasi Awal Keluarga</h3>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700">Nama Ayah</label>
@@ -58,18 +43,18 @@
                                             <input :name="`children[` + idx + `]`" x-model="children[idx]" type="text"
                                                 placeholder="Nama anak" class="block w-full rounded-md border-gray-300">
                                             <button type="button" @click="removeChild(idx)"
-                                                class="px-2 py-1 bg-red-500 text-white rounded">-</button>
+                                                class="px-3 py-1.5 bg-gradient-to-r from-red-400 to-pink-500 hover:from-red-500 hover:to-pink-600 text-white rounded-lg shadow-md hover:shadow-lg transition-all">-</button>
                                         </div>
                                     </template>
                                     <div class="mt-2">
                                         <button type="button" @click="addChild()"
-                                            class="px-3 py-1 bg-indigo-600 text-white rounded">Tambah Anak</button>
+                                            class="px-4 py-2 bg-gradient-to-r from-blue-400 to-indigo-500 hover:from-blue-500 hover:to-indigo-600 text-white rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all">Tambah Anak</button>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Company specific inputs -->
-                            <div x-show="type === 'company'" @if($isTypeLocked && $type === 'company') style="display: block;" @else x-cloak @endif class="space-y-4">
+                            <div x-show="type === 'company'" @if($type === 'company') style="display: block;" @else x-cloak @endif class="space-y-4">
                                 <h3 class="text-lg font-medium">Informasi Perusahaan</h3>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700">Direktur</label>
@@ -86,12 +71,12 @@
                                                 type="text" placeholder="Nama manajer"
                                                 class="block w-full rounded-md border-gray-300">
                                             <button type="button" @click="removeManager(idx)"
-                                                class="px-2 py-1 bg-red-500 text-white rounded">-</button>
+                                                class="px-3 py-1.5 bg-gradient-to-r from-red-400 to-pink-500 hover:from-red-500 hover:to-pink-600 text-white rounded-lg shadow-md hover:shadow-lg transition-all">-</button>
                                         </div>
                                     </template>
                                     <div class="mt-2">
                                         <button type="button" @click="addManager()"
-                                            class="px-3 py-1 bg-indigo-600 text-white rounded">Tambah Manajer</button>
+                                            class="px-4 py-2 bg-gradient-to-r from-blue-400 to-indigo-500 hover:from-blue-500 hover:to-indigo-600 text-white rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all">Tambah Manajer</button>
                                     </div>
                                 </div>
 
@@ -102,12 +87,12 @@
                                             <input :name="`company_staffs[` + idx + `]`" x-model="staffs[idx]" type="text"
                                                 placeholder="Nama staf" class="block w-full rounded-md border-gray-300">
                                             <button type="button" @click="removeStaff(idx)"
-                                                class="px-2 py-1 bg-red-500 text-white rounded">-</button>
+                                                class="px-3 py-1.5 bg-gradient-to-r from-red-400 to-pink-500 hover:from-red-500 hover:to-pink-600 text-white rounded-lg shadow-md hover:shadow-lg transition-all">-</button>
                                         </div>
                                     </template>
                                     <div class="mt-2">
                                         <button type="button" @click="addStaff()"
-                                            class="px-3 py-1 bg-indigo-600 text-white rounded">Tambah Staf</button>
+                                            class="px-4 py-2 bg-gradient-to-r from-blue-400 to-indigo-500 hover:from-blue-500 hover:to-indigo-600 text-white rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all">Tambah Staf</button>
                                     </div>
                                 </div>
 
@@ -118,12 +103,12 @@
                                             <input :name="`company_interns[` + idx + `]`" x-model="interns[idx]" type="text"
                                                 placeholder="Nama magang" class="block w-full rounded-md border-gray-300">
                                             <button type="button" @click="removeIntern(idx)"
-                                                class="px-2 py-1 bg-red-500 text-white rounded">-</button>
+                                                class="px-3 py-1.5 bg-gradient-to-r from-red-400 to-pink-500 hover:from-red-500 hover:to-pink-600 text-white rounded-lg shadow-md hover:shadow-lg transition-all">-</button>
                                         </div>
                                     </template>
                                     <div class="mt-2">
                                         <button type="button" @click="addIntern()"
-                                            class="px-3 py-1 bg-indigo-600 text-white rounded">Tambah Magang</button>
+                                            class="px-4 py-2 bg-gradient-to-r from-blue-400 to-indigo-500 hover:from-blue-500 hover:to-indigo-600 text-white rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all">Tambah Magang</button>
                                     </div>
                                 </div>
                             </div>
@@ -169,11 +154,11 @@
 
                             <div class="flex items-center justify-end space-x-3">
                                 <a href="{{ route('user.family.index') }}"
-                                    class="inline-flex items-center px-4 py-2 bg-gray-200 border border-transparent rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-300 focus:bg-gray-300 active:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                                    class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-gray-300 to-gray-400 hover:from-gray-400 hover:to-gray-500 border border-transparent rounded-xl font-medium text-sm text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all">
                                     Batal
                                 </a>
                                 <button type="submit"
-                                    class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                                    class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-400 to-indigo-500 hover:from-blue-500 hover:to-indigo-600 border border-transparent rounded-xl font-medium text-sm text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all">
                                     Buat {{ $type === 'company' ? 'Perusahaan' : 'Keluarga' }}
                                 </button>
                             </div>

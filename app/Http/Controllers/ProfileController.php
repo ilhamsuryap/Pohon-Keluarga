@@ -16,6 +16,11 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): View
     {
+        // Jika user adalah admin, redirect ke admin profile
+        if ($request->user()->isAdmin()) {
+            return redirect()->route('admin.profile');
+        }
+
         return view('profile.edit', [
             'user' => $request->user(),
         ]);
@@ -33,6 +38,11 @@ class ProfileController extends Controller
         }
 
         $request->user()->save();
+
+        // Redirect ke admin profile jika user adalah admin
+        if ($request->user()->isAdmin()) {
+            return Redirect::route('admin.profile')->with('status', 'profile-updated');
+        }
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }

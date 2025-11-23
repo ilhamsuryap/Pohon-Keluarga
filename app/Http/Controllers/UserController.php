@@ -121,17 +121,74 @@ class UserController extends Controller
         
         $familyMembers = $family->members()->get();
         
-        // Build tree data for D3.js visualization
+        // Check if there are duplicate NIKs within the same family
+        // Compare each member's NIK with all other members' NIKs (both in same family and other families)
+        $hasDuplicateNik = false;
+        
+        // Get all NIKs from this family (non-empty only)
+        $familyNiks = $familyMembers->pluck('nik')
+            ->filter(function($nik) {
+                return !empty($nik) && $nik !== null && trim($nik) !== '';
+            })
+            ->map(function($nik) {
+                return trim($nik);
+            })
+            ->unique()
+            ->values();
+        
+        if ($familyNiks->count() > 0) {
+            // Check 1: Duplicate NIK within the same family using database query
+            // Count how many times each NIK appears in this family
+            foreach ($familyNiks as $nik) {
+                $count = FamilyMember::where('family_id', $family->id)
+                    ->where('nik', $nik)
+                    ->whereNotNull('nik')
+                    ->where('nik', '!=', '')
+                    ->count();
+                
+                if ($count > 1) {
+                    $hasDuplicateNik = true;
+                    break;
+                }
+            }
+            
+            // Check 2: If no duplicate in same family, check if any NIK matches with other families
+            if (!$hasDuplicateNik) {
+                foreach ($familyNiks as $nik) {
+                    $existsInOtherFamily = FamilyMember::where('nik', $nik)
+                        ->where('family_id', '!=', $family->id)
+                        ->whereNotNull('nik')
+                        ->where('nik', '!=', '')
+                        ->exists();
+                    
+                    if ($existsInOtherFamily) {
+                        $hasDuplicateNik = true;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        // Debug logging
+        \Log::info('Family Show - NIK Check', [
+            'family_id' => $family->id,
+            'total_members' => $familyMembers->count(),
+            'niks_count' => $familyNiks->count(),
+            'has_duplicate' => $hasDuplicateNik,
+            'niks' => $familyNiks->toArray()
+        ]);
+        
+        // Build tree data for D3.js visualization - only for this family (no NIK connection)
         $treeJson = null;
         try {
-            $tree = $familyTreeService->buildFamilyTree($family->id);
+            $tree = $familyTreeService->buildSimpleFamilyTree($family->id);
             $treeJson = json_encode($tree, JSON_UNESCAPED_UNICODE | JSON_HEX_APOS | JSON_HEX_QUOT);
         } catch (\Exception $e) {
             \Log::error('Error building tree: ' . $e->getMessage());
             $treeJson = null;
         }
         
-        return view('user.family.show', compact('family', 'familyMembers', 'treeJson'));
+        return view('user.family.show', compact('family', 'familyMembers', 'treeJson', 'hasDuplicateNik'));
     }
 
     public function familyTree(Request $request, FamilyTreeService $familyTreeService)

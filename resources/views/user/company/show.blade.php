@@ -1,104 +1,164 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <!-- Header Section -->
-            <div class="bg-white overflow-hidden shadow-xl sm:rounded-2xl mb-8">
-                <div class="bg-gradient-to-r from-teal-600 to-blue-500 px-6 py-8">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h1 class="text-3xl font-bold text-white mb-2">{{ $company->company_name }}</h1>
-                            <p class="text-blue-100">Struktur Perusahaan</p>
+    <style>
+        html, body {
+            overflow: hidden !important;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            position: fixed;
+            width: 100vw;
+            height: 100vh;
+        }
+        #app {
+            overflow: hidden !important;
+        }
+    </style>
+    
+    <div class="bg-gradient-to-br from-teal-50 via-green-50 to-emerald-50 w-full" style="height: calc(100vh - 64px); display: flex; flex-direction: column; overflow: hidden; max-height: calc(100vh - 64px);">
+        <!-- Header Bar with Identity -->
+        <div class="bg-white border-b border-teal-200 shadow-sm px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <!-- Icon & Badge -->
+                    <div class="flex items-center space-x-3">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-green-600 flex items-center justify-center shadow-lg">
+                            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                            </svg>
                         </div>
-                        <div class="flex space-x-4">
-                            <button onclick="document.getElementById('addCompanyModal').classList.remove('hidden')"
-                                class="inline-flex items-center px-6 py-3 border border-transparent text-sm font-medium rounded-xl bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white transition-all duration-200 transform hover:scale-105 shadow-lg">
-                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                                </svg>
-                                Tambah Anggota Perusahaan
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <span class="px-3 py-1 text-xs font-bold text-white rounded-full bg-gradient-to-r from-teal-500 to-green-600 shadow-md">
+                                    PERUSAHAAN
+                                </span>
+                            </div>
+                            <h1 class="text-2xl font-bold text-gray-900 mt-1">{{ $company->company_name }}</h1>
+                            <p class="text-sm text-gray-500 mt-0.5">
+                                <a href="{{ route('user.dashboard') }}" class="hover:text-teal-600">Dashboard</a>
+                                <span class="mx-2">/</span>
+                                <a href="{{ route('user.company.index') }}" class="hover:text-teal-600">Perusahaan</a>
+                                <span class="mx-2">/</span>
+                                <span class="text-gray-700">{{ Str::limit($company->company_name, 30) }}</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Quick Actions -->
+                <div class="flex items-center space-x-3" x-data="{ exportOpen: false }">
+                    <a href="{{ route('user.company.edit', $company) }}"
+                        class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-all shadow-sm hover:shadow-md">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                        </svg>
+                        Edit
+                    </a>
+                    
+                    <!-- Export Dropdown -->
+                    <div class="relative" @click.away="exportOpen = false">
+                        <button @click="exportOpen = !exportOpen"
+                            class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-teal-500 to-green-600 text-white rounded-lg text-sm font-medium hover:from-teal-600 hover:to-green-700 transition-all shadow-md hover:shadow-lg">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            Export
+                            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        
+                        <div x-show="exportOpen" 
+                             x-transition:enter="transition ease-out duration-100"
+                             x-transition:enter-start="transform opacity-0 scale-95"
+                             x-transition:enter-end="transform opacity-100 scale-100"
+                             x-transition:leave="transition ease-in duration-75"
+                             x-transition:leave-start="transform opacity-100 scale-100"
+                             x-transition:leave-end="transform opacity-0 scale-95"
+                             class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-50"
+                             style="display: none;">
+                            <button onclick="exportCompanyAsImage()"
+                                class="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
+                                <div class="flex items-center">
+                                    <svg class="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                    </svg>
+                                    Export sebagai Gambar
+                                </div>
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Success/Error Messages -->
-            @if (session('success'))
-                <div class="bg-green-50 border border-green-200 rounded-2xl p-4 mb-8">
-                    <div class="flex">
-                        <div class="flex-shrink-0">
-                            <svg class="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd"
-                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                                    clip-rule="evenodd"></path>
-                            </svg>
-                        </div>
-                        <div class="ml-3">
-                            <p class="text-sm font-medium text-green-800">{{ session('success') }}</p>
-                        </div>
+        <!-- Floating Success/Error Messages -->
+        @if (session('success'))
+            <div class="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-green-50 border border-green-200 rounded-2xl p-4 shadow-2xl max-w-md animate-fade-in-up">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                clip-rule="evenodd"></path>
+                        </svg>
                     </div>
-                </div>
-            @endif
-
-            @if ($errors->any())
-                <div class="bg-red-50 border border-red-200 rounded-2xl p-4 mb-8">
-                    <div class="flex">
-                        <div class="flex-shrink-0">
-                            <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd"
-                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.257 3.099c.366-.446 1.12-.173 1.12.383v7.036c0 .556-.754.829-1.12.383L5.46 8.383a1 1 0 010-1.266l2.797-3.018z"
-                                    clip-rule="evenodd" />
-                            </svg>
-                        </div>
-                        <div class="ml-3">
-                            <p class="text-sm font-medium text-red-800">Terjadi kesalahan input.</p>
-                            <ul class="mt-2 text-sm text-red-700 list-disc list-inside">
-                                @foreach ($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            @endif
-
-            @if (session('error'))
-                <div class="bg-red-50 border border-red-200 rounded-2xl p-4 mb-8">
-                    <div class="flex">
-                        <div class="flex-shrink-0">
-                            <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd"
-                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                                    clip-rule="evenodd"></path>
-                            </svg>
-                        </div>
-                        <div class="ml-3">
-                            <p class="text-sm font-medium text-red-800">{{ session('error') }}</p>
-                        </div>
-                    </div>
-                </div>
-            @endif
-
-            <!-- Company Visualization -->
-            <div class="bg-white overflow-hidden shadow-xl sm:rounded-2xl mb-8">
-                <div class="p-8">
-                    <div class="flex items-center justify-between mb-6">
-                        <div>
-                            <h2 class="text-2xl font-bold text-gray-900 mb-2">Struktur Perusahaan</h2>
-                            <p class="text-gray-600">{{ $company->description }}</p>
-                        </div>
-                    </div>
-
-                    <div id="family-tree"
-                        class="rounded-2xl p-8 bg-gradient-to-br from-gray-50 to-blue-50 border border-gray-100">
-                        <div class="family-tree-container" id="family-tree-container" style="width: 100%; height: 800px; position: relative; overflow: auto;">
-                        </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-green-800">{{ session('success') }}</p>
                     </div>
                 </div>
             </div>
+        @endif
+
+        @if ($errors->any())
+            <div class="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-red-50 border border-red-200 rounded-2xl p-4 shadow-2xl max-w-md animate-fade-in-up">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.257 3.099c.366-.446 1.12-.173 1.12.383v7.036c0 .556-.754.829-1.12.383L5.46 8.383a1 1 0 010-1.266l2.797-3.018z"
+                                clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-red-800">Terjadi kesalahan input.</p>
+                        <ul class="mt-2 text-sm text-red-700 list-disc list-inside">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        @if (session('error'))
+            <div class="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-red-50 border border-red-200 rounded-2xl p-4 shadow-2xl max-w-md animate-fade-in-up">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-red-800">{{ session('error') }}</p>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        <!-- Diagram Container with thin margins -->
+        <div class="flex-1 m-2 mb-2 bg-white rounded-2xl shadow-xl overflow-hidden relative" style="min-width: 0;">
+            <div id="family-tree" class="w-full h-full" style="overflow: hidden;">
+                <div class="family-tree-container" id="family-tree-container" style="width: 100%; height: 100%; position: relative; overflow: auto; overflow-x: auto; overflow-y: auto;">
+                </div>
+            </div>
+        </div>
 
             <!-- Enhanced Styles -->
             <style>
@@ -264,6 +324,12 @@
                     text-align: center;
                     padding: 60px 20px;
                     color: #6b7280;
+                    width: 100%;
+                    height: 100%;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
                 }
 
                 .empty-state svg {
@@ -411,7 +477,35 @@
                             const birthDate = new Date(member.birth_date);
                             document.getElementById('edit_company_birth_date').value = birthDate.toISOString().split('T')[0];
                         }
-                        document.getElementById('edit_company_position').value = member.position || '';
+                        
+                        // Handle position - check if it's in the select options
+                        const positionSelect = document.getElementById('edit_company_position');
+                        const customPositionField = document.getElementById('edit_custom_position_field');
+                        const customPositionInput = document.getElementById('edit_custom_position');
+                        
+                        if (member.position) {
+                            // Check if position exists in select options
+                            const positionOption = Array.from(positionSelect.options).find(
+                                option => option.value === member.position
+                            );
+                            
+                            if (positionOption) {
+                                // Position is in the list
+                                positionSelect.value = member.position;
+                                if (customPositionField) customPositionField.style.display = 'none';
+                                if (customPositionInput) customPositionInput.value = '';
+                            } else {
+                                // Position is not in the list, use custom
+                                positionSelect.value = '==Custom==';
+                                if (customPositionField) customPositionField.style.display = 'block';
+                                if (customPositionInput) customPositionInput.value = member.position;
+                            }
+                        } else {
+                            positionSelect.value = '';
+                            if (customPositionField) customPositionField.style.display = 'none';
+                            if (customPositionInput) customPositionInput.value = '';
+                        }
+                        
                         document.getElementById('edit_company_description').value = member.description || '';
                         
                         const form = document.getElementById('editCompanyForm');
@@ -429,15 +523,13 @@
 
                         if (!members || members.length === 0) {
                             container.innerHTML = `
-                                <div class="empty-state">
-                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-                                    </svg>
-                                    <h3 class="text-xl font-semibold mb-2">Belum Ada Anggota Perusahaan</h3>
-                                    <p class="mb-6">Mulai membangun struktur perusahaan Anda dengan menambahkan anggota pertama</p>
-                                    <button onclick="document.getElementById('addCompanyModal').classList.remove('hidden')" class="btn-primary text-white">
-                                        Tambah Anggota Pertama
+                                <div class="empty-state flex flex-col items-center justify-center h-full">
+                                    <button onclick="document.getElementById('addCompanyModal').classList.remove('hidden')"
+                                        class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white rounded-full shadow-2xl hover:shadow-3xl transition-all duration-200 transform hover:scale-110 text-4xl font-bold">
+                                        +
                                     </button>
+                                    <h3 class="text-xl font-semibold mb-2 mt-4">Belum Ada Anggota Perusahaan</h3>
+                                    <p class="mb-6">Mulai membangun struktur perusahaan Anda dengan menambahkan anggota pertama</p>
                                 </div>
                             `;
                             return;
@@ -496,8 +588,8 @@
 
                         // Enhanced D3 tree for company
                         if (window.d3) {
-                            const width = container.clientWidth || 1400;
-                            const height = container.clientHeight || 800;
+                            const width = container.clientWidth;
+                            const height = container.clientHeight;
 
                             // Clear container
                             container.innerHTML = '';
@@ -741,15 +833,63 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Posisi</label>
-                                <div class="relative">
-                                    <input type="text" name="position" id="add_company_position" 
-                                        list="positions_list" placeholder="Masukkan atau pilih posisi" 
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 px-3 py-2 bg-white text-gray-900 placeholder-gray-400">
-                                    <datalist id="positions_list">
-                                        <!-- Will be populated by JavaScript -->
-                                    </datalist>
+                                <select name="position" id="add_company_position" 
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 px-3 py-2 bg-white text-gray-900">
+                                    <option value="">Pilih Posisi</option>
+                                    <optgroup label="Pimpinan">
+                                        <option value="CEO / Direktur Utama">CEO / Direktur Utama</option>
+                                        <option value="Direktur">Direktur</option>
+                                        <option value="Direktur Operasional">Direktur Operasional</option>
+                                        <option value="Direktur Keuangan">Direktur Keuangan</option>
+                                        <option value="Direktur Pemasaran">Direktur Pemasaran</option>
+                                        <option value="Direktur Sumber Daya Manusia">Direktur Sumber Daya Manusia</option>
+                                    </optgroup>
+                                    <optgroup label="Manajemen">
+                                        <option value="General Manager">General Manager</option>
+                                        <option value="Senior Manager">Senior Manager</option>
+                                        <option value="Manager">Manager</option>
+                                        <option value="Manager Operasional">Manager Operasional</option>
+                                        <option value="Manager Keuangan">Manager Keuangan</option>
+                                        <option value="Manager Pemasaran">Manager Pemasaran</option>
+                                        <option value="Manager Sumber Daya Manusia">Manager Sumber Daya Manusia</option>
+                                        <option value="Manager IT">Manager IT</option>
+                                        <option value="Manager Produksi">Manager Produksi</option>
+                                    </optgroup>
+                                    <optgroup label="Supervisi">
+                                        <option value="Senior Supervisor">Senior Supervisor</option>
+                                        <option value="Supervisor">Supervisor</option>
+                                        <option value="Supervisor Operasional">Supervisor Operasional</option>
+                                        <option value="Supervisor Produksi">Supervisor Produksi</option>
+                                        <option value="Supervisor Quality Control">Supervisor Quality Control</option>
+                                    </optgroup>
+                                    <optgroup label="Staf">
+                                        <option value="Senior Staff">Senior Staff</option>
+                                        <option value="Staff">Staff</option>
+                                        <option value="Staff Administrasi">Staff Administrasi</option>
+                                        <option value="Staff Keuangan">Staff Keuangan</option>
+                                        <option value="Staff Pemasaran">Staff Pemasaran</option>
+                                        <option value="Staff Sumber Daya Manusia">Staff Sumber Daya Manusia</option>
+                                        <option value="Staff IT">Staff IT</option>
+                                        <option value="Staff Produksi">Staff Produksi</option>
+                                        <option value="Staff Customer Service">Staff Customer Service</option>
+                                        <option value="Staff Gudang">Staff Gudang</option>
+                                    </optgroup>
+                                    <optgroup label="Lainnya">
+                                        <option value="Analyst">Analyst</option>
+                                        <option value="Senior Analyst">Senior Analyst</option>
+                                        <option value="Specialist">Specialist</option>
+                                        <option value="Coordinator">Coordinator</option>
+                                        <option value="Assistant">Assistant</option>
+                                        <option value="Intern / Magang">Intern / Magang</option>
+                                    </optgroup>
+                                    <option value="==Custom==">==Custom==</option>
+                                </select>
+                                <div id="add_custom_position_field" style="display: none;" class="mt-2">
+                                    <input type="text" name="custom_position" id="add_custom_position" 
+                                        placeholder="Masukkan posisi custom" 
+                                        class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 px-3 py-2 bg-white text-gray-900 placeholder-gray-400">
                                 </div>
-                                <p class="mt-1 text-xs text-gray-500">Ketik untuk mencari atau pilih dari daftar yang tersedia</p>
+                                <p class="mt-1 text-xs text-gray-500">Pilih posisi dari daftar atau pilih ==Custom== untuk memasukkan posisi custom</p>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Deskripsi</label>
@@ -809,15 +949,63 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Posisi</label>
-                                <div class="relative">
-                                    <input type="text" name="position" id="edit_company_position" 
-                                        list="edit_positions_list" placeholder="Masukkan atau pilih posisi" 
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 px-3 py-2 bg-white text-gray-900 placeholder-gray-400">
-                                    <datalist id="edit_positions_list">
-                                        <!-- Will be populated by JavaScript -->
-                                    </datalist>
+                                <select name="position" id="edit_company_position" 
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 px-3 py-2 bg-white text-gray-900">
+                                    <option value="">Pilih Posisi</option>
+                                    <optgroup label="Pimpinan">
+                                        <option value="CEO / Direktur Utama">CEO / Direktur Utama</option>
+                                        <option value="Direktur">Direktur</option>
+                                        <option value="Direktur Operasional">Direktur Operasional</option>
+                                        <option value="Direktur Keuangan">Direktur Keuangan</option>
+                                        <option value="Direktur Pemasaran">Direktur Pemasaran</option>
+                                        <option value="Direktur Sumber Daya Manusia">Direktur Sumber Daya Manusia</option>
+                                    </optgroup>
+                                    <optgroup label="Manajemen">
+                                        <option value="General Manager">General Manager</option>
+                                        <option value="Senior Manager">Senior Manager</option>
+                                        <option value="Manager">Manager</option>
+                                        <option value="Manager Operasional">Manager Operasional</option>
+                                        <option value="Manager Keuangan">Manager Keuangan</option>
+                                        <option value="Manager Pemasaran">Manager Pemasaran</option>
+                                        <option value="Manager Sumber Daya Manusia">Manager Sumber Daya Manusia</option>
+                                        <option value="Manager IT">Manager IT</option>
+                                        <option value="Manager Produksi">Manager Produksi</option>
+                                    </optgroup>
+                                    <optgroup label="Supervisi">
+                                        <option value="Senior Supervisor">Senior Supervisor</option>
+                                        <option value="Supervisor">Supervisor</option>
+                                        <option value="Supervisor Operasional">Supervisor Operasional</option>
+                                        <option value="Supervisor Produksi">Supervisor Produksi</option>
+                                        <option value="Supervisor Quality Control">Supervisor Quality Control</option>
+                                    </optgroup>
+                                    <optgroup label="Staf">
+                                        <option value="Senior Staff">Senior Staff</option>
+                                        <option value="Staff">Staff</option>
+                                        <option value="Staff Administrasi">Staff Administrasi</option>
+                                        <option value="Staff Keuangan">Staff Keuangan</option>
+                                        <option value="Staff Pemasaran">Staff Pemasaran</option>
+                                        <option value="Staff Sumber Daya Manusia">Staff Sumber Daya Manusia</option>
+                                        <option value="Staff IT">Staff IT</option>
+                                        <option value="Staff Produksi">Staff Produksi</option>
+                                        <option value="Staff Customer Service">Staff Customer Service</option>
+                                        <option value="Staff Gudang">Staff Gudang</option>
+                                    </optgroup>
+                                    <optgroup label="Lainnya">
+                                        <option value="Analyst">Analyst</option>
+                                        <option value="Senior Analyst">Senior Analyst</option>
+                                        <option value="Specialist">Specialist</option>
+                                        <option value="Coordinator">Coordinator</option>
+                                        <option value="Assistant">Assistant</option>
+                                        <option value="Intern / Magang">Intern / Magang</option>
+                                    </optgroup>
+                                    <option value="==Custom==">==Custom==</option>
+                                </select>
+                                <div id="edit_custom_position_field" style="display: none;" class="mt-2">
+                                    <input type="text" name="custom_position" id="edit_custom_position" 
+                                        placeholder="Masukkan posisi custom" 
+                                        class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 px-3 py-2 bg-white text-gray-900 placeholder-gray-400">
                                 </div>
-                                <p class="mt-1 text-xs text-gray-500">Ketik untuk mencari atau pilih dari daftar yang tersedia</p>
+                                <p class="mt-1 text-xs text-gray-500">Pilih posisi dari daftar atau pilih ==Custom== untuk memasukkan posisi custom</p>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Deskripsi</label>
@@ -930,48 +1118,102 @@
             </div>
 
             <script>
-                // Load positions list for company members
-                function loadPositions() {
-                    fetch(`/user/company/{{ $company->id }}/members/positions`)
-                        .then(r => r.json())
-                        .then(positions => {
-                            const positionsList = document.getElementById('positions_list');
-                            const editPositionsList = document.getElementById('edit_positions_list');
-                            if (positionsList) {
-                                positionsList.innerHTML = '';
-                                positions.forEach(pos => {
-                                    const option = document.createElement('option');
-                                    option.value = pos;
-                                    positionsList.appendChild(option);
-                                });
+                // Handle custom position field visibility
+                function handlePositionChange(positionSelectId, customFieldId, customInputId) {
+                    const positionSelect = document.getElementById(positionSelectId);
+                    const customField = document.getElementById(customFieldId);
+                    const customInput = document.getElementById(customInputId);
+                    
+                    if (!positionSelect || !customField || !customInput) return;
+                    
+                    positionSelect.addEventListener('change', function() {
+                        if (this.value === '==Custom==') {
+                            customField.style.display = 'block';
+                            customInput.required = true;
+                            customInput.focus();
+                        } else {
+                            customField.style.display = 'none';
+                            customInput.required = false;
+                            customInput.value = '';
+                        }
+                    });
+                }
+                
+                // Handle form submission for custom position
+                function handlePositionSubmit(formId, positionSelectId, customInputId) {
+                    const form = document.getElementById(formId);
+                    const positionSelect = document.getElementById(positionSelectId);
+                    const customInput = document.getElementById(customInputId);
+                    
+                    if (!form || !positionSelect || !customInput) return;
+                    
+                    form.addEventListener('submit', function(e) {
+                        // Remove any existing hidden position input first
+                        const existingHidden = form.querySelector('input[name="position"][type="hidden"]');
+                        if (existingHidden) {
+                            existingHidden.remove();
+                        }
+                        
+                        if (positionSelect.value === '==Custom==') {
+                            if (!customInput.value.trim()) {
+                                e.preventDefault();
+                                alert('Mohon masukkan posisi custom');
+                                customInput.focus();
+                                return false;
                             }
-                            if (editPositionsList) {
-                                editPositionsList.innerHTML = '';
-                                positions.forEach(pos => {
-                                    const option = document.createElement('option');
-                                    option.value = pos;
-                                    editPositionsList.appendChild(option);
-                                });
-                            }
-                        })
-                        .catch(() => console.error('Failed to load positions'));
+                            // Temporarily disable the select so it doesn't submit
+                            positionSelect.disabled = true;
+                            // Create hidden input with custom value
+                            const hiddenInput = document.createElement('input');
+                            hiddenInput.type = 'hidden';
+                            hiddenInput.name = 'position';
+                            hiddenInput.value = customInput.value.trim();
+                            form.appendChild(hiddenInput);
+                        } else {
+                            // Ensure select is enabled
+                            positionSelect.disabled = false;
+                        }
+                    });
                 }
 
                 function closeAddCompanyModal() {
                     document.getElementById('addCompanyModal').classList.add('hidden');
                     document.getElementById('addCompanyForm').reset();
+                    // Reset custom position field visibility
+                    const customField = document.getElementById('add_custom_position_field');
+                    if (customField) customField.style.display = 'none';
+                    // Re-enable select and remove any hidden inputs
+                    const positionSelect = document.getElementById('add_company_position');
+                    if (positionSelect) positionSelect.disabled = false;
                     const form = document.getElementById('addCompanyForm');
+                    const existingHidden = form.querySelector('input[name="position"][type="hidden"]');
+                    if (existingHidden) existingHidden.remove();
                     form.action = '{{ route("user.company.members.store", $company) }}';
                 }
 
                 function closeEditCompanyModal() {
                     document.getElementById('editCompanyModal').classList.add('hidden');
+                    // Reset custom position field visibility
+                    const customField = document.getElementById('edit_custom_position_field');
+                    if (customField) customField.style.display = 'none';
+                    // Re-enable select and remove any hidden inputs
+                    const positionSelect = document.getElementById('edit_company_position');
+                    if (positionSelect) positionSelect.disabled = false;
+                    const form = document.getElementById('editCompanyForm');
+                    const existingHidden = form.querySelector('input[name="position"][type="hidden"]');
+                    if (existingHidden) existingHidden.remove();
                 }
 
                 // closeCompanyDetailModal is already defined in the D3.js script block above
 
                 document.addEventListener('DOMContentLoaded', function() {
-                    loadPositions();
+                    // Handle custom position for add form
+                    handlePositionChange('add_company_position', 'add_custom_position_field', 'add_custom_position');
+                    handlePositionSubmit('addCompanyForm', 'add_company_position', 'add_custom_position');
+                    
+                    // Handle custom position for edit form
+                    handlePositionChange('edit_company_position', 'edit_custom_position_field', 'edit_custom_position');
+                    handlePositionSubmit('editCompanyForm', 'edit_company_position', 'edit_custom_position');
                     
                     // Photo preview for add company form
                     const addPhotoInput = document.getElementById('add_company_photo');
@@ -1005,6 +1247,41 @@
                         });
                     }
                 });
+            </script>
+
+            <!-- html2canvas for image export -->
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+            <script>
+                function exportCompanyAsImage() {
+                    const container = document.getElementById('family-tree-container');
+                    const companyName = '{{ $company->company_name }}';
+                    
+                    // Show loading indicator
+                    const loading = document.createElement('div');
+                    loading.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center';
+                    loading.innerHTML = '<div class="bg-white rounded-lg p-6"><p class="text-gray-700">Mengekspor diagram...</p></div>';
+                    document.body.appendChild(loading);
+                    
+                    html2canvas(container, {
+                        backgroundColor: '#ffffff',
+                        scale: 2,
+                        logging: false,
+                        useCORS: true
+                    }).then(canvas => {
+                        // Create download link
+                        const link = document.createElement('a');
+                        link.download = companyName + '_struktur.png';
+                        link.href = canvas.toDataURL('image/png');
+                        link.click();
+                        
+                        // Remove loading indicator
+                        document.body.removeChild(loading);
+                    }).catch(err => {
+                        console.error('Export error:', err);
+                        alert('Gagal mengekspor diagram. Silakan coba lagi.');
+                        document.body.removeChild(loading);
+                    });
+                }
             </script>
         </div>
     </div>

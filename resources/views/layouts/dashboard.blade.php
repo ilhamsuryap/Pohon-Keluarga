@@ -6,7 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ $title ?? 'Dashboard - Pohon Keluarga' }}</title>
+    <title>{{ $title ?? 'Dashboard - SilsilahKita' }}</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ asset('storage/pohonLogo.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('storage/pohonLogo.png') }}">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

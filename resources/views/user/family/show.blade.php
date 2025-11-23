@@ -1,111 +1,202 @@
 @extends('layouts.app')
 
+@push('styles')
+<style>
+    /* Only prevent scrolling on family diagram page */
+    body.family-diagram-no-scroll {
+        overflow: hidden !important;
+        position: fixed;
+        width: 100vw;
+        height: 100vh;
+    }
+    body.family-diagram-no-scroll html {
+        overflow: hidden !important;
+    }
+</style>
+<script>
+    // Add class to body only on this page to prevent scrolling
+    (function() {
+        document.body.classList.add('family-diagram-no-scroll');
+    })();
+</script>
+@endpush
+
 @section('content')
-    <div class="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <!-- Header Section -->
-            <div class="bg-white overflow-hidden shadow-xl sm:rounded-2xl mb-8">
-                <div class="bg-gradient-to-r from-purple-600 to-blue-500 px-6 py-8">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h1 class="text-3xl font-bold text-white mb-2">{{ $family->family_name }}</h1>
-                            <p class="text-blue-100">Silsilah Keluarga</p>
+    <div class="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 w-full" style="height: calc(100vh - 64px); display: flex; flex-direction: column; overflow: hidden; max-height: calc(100vh - 64px);">
+        <!-- Header Bar with Identity -->
+        <div class="bg-white border-b border-blue-200 shadow-sm px-6 py-4">
+            <div class="grid grid-cols-3 items-center gap-4">
+                <!-- Left: Badge & Title -->
+                <div class="flex items-center space-x-4">
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <span class="px-3 py-1 text-xs font-bold text-white rounded-full bg-gradient-to-r from-blue-500 to-purple-600 shadow-md">
+                                KELUARGA
+                            </span>
                         </div>
-                        <div class="flex space-x-4">
-                            <button onclick="openAddModal()"
-                                class="inline-flex items-center px-6 py-3 border border-transparent text-sm font-medium rounded-xl bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white transition-all duration-200 transform hover:scale-105 shadow-lg">
-                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                                </svg>
-                                Tambah Anggota
-                            </button>
-
+                        <h1 class="text-2xl font-bold text-gray-900 mt-1">{{ $family->family_name }}</h1>
+                        <p class="text-sm text-gray-500 mt-0.5">
+                            <a href="{{ route('user.dashboard') }}" class="hover:text-blue-600">Dashboard</a>
+                            <span class="mx-2">/</span>
+                            <a href="{{ route('user.family.index') }}" class="hover:text-blue-600">Keluarga</a>
+                            <span class="mx-2">/</span>
+                            <span class="text-gray-700">{{ Str::limit($family->family_name, 30) }}</span>
+                        </p>
+                    </div>
+                </div>
+                <!-- Center: Pohon Keluarga Button -->
+                <div class="flex flex-col items-center justify-center">
+                    @if(isset($hasDuplicateNik) && $hasDuplicateNik)
+                        <a href="{{ route('user.family.tree') }}"
+                            class="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg text-sm font-semibold hover:from-green-600 hover:to-emerald-700 transition-all shadow-md hover:shadow-lg">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                            </svg>
+                            Pohon Keluarga
+                        </a>
+                        <p class="mt-1.5 text-xs text-green-600 font-medium flex items-center">
+                            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            Terdapat NIK yang sama dalam keluarga ini
+                        </p>
+                    @else
+                        <button disabled
+                            class="inline-flex items-center px-5 py-2.5 bg-gray-300 text-gray-500 rounded-lg text-sm font-semibold cursor-not-allowed shadow-sm">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                            </svg>
+                            Pohon Keluarga
+                        </button>
+                        <p class="mt-1.5 text-xs text-gray-500 flex items-center">
+                            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                            </svg>
+                            Fitur tersedia jika terdapat NIK yang sama antar anggota keluarga
+                        </p>
+                    @endif
+                </div>
+                <!-- Right: Quick Actions -->
+                <div class="flex items-center justify-end space-x-3" x-data="{ exportOpen: false }">
+                    <a href="{{ route('user.family.edit', $family) }}"
+                        class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-all shadow-sm hover:shadow-md">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                        </svg>
+                        Edit
+                    </a>
+                    
+                    <!-- Export Dropdown -->
+                    <div class="relative" @click.away="exportOpen = false">
+                        <button @click="exportOpen = !exportOpen"
+                            class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg text-sm font-medium hover:from-blue-600 hover:to-purple-700 transition-all shadow-md hover:shadow-lg">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            Export
+                            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        
+                        <div x-show="exportOpen" 
+                             x-transition:enter="transition ease-out duration-100"
+                             x-transition:enter-start="transform opacity-0 scale-95"
+                             x-transition:enter-end="transform opacity-100 scale-100"
+                             x-transition:leave="transition ease-in duration-75"
+                             x-transition:leave-start="transform opacity-100 scale-100"
+                             x-transition:leave-end="transform opacity-0 scale-95"
+                             class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-50"
+                             style="display: none;">
                             <a href="{{ route('user.family.export.pdf', $family) }}"
-                                class="inline-flex items-center px-6 py-3 border border-white text-sm font-medium rounded-xl text-white bg-transparent hover:bg-white hover:text-black focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white transition-all duration-200 transform hover:scale-105">
-                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                                Export PDF
+                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
+                                <div class="flex items-center">
+                                    <svg class="w-4 h-4 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                                    </svg>
+                                    Export sebagai PDF
+                                </div>
                             </a>
+                            <button onclick="exportAsImage()"
+                                class="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
+                                <div class="flex items-center">
+                                    <svg class="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                    </svg>
+                                    Export sebagai Gambar
+                                </div>
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Success/Error Messages -->
-            @if (session('success'))
-                <div class="bg-green-50 border border-green-200 rounded-2xl p-4 mb-8">
-                    <div class="flex">
-                        <div class="flex-shrink-0">
-                            <svg class="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd"
-                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                                    clip-rule="evenodd"></path>
-                            </svg>
-                        </div>
-                        <div class="ml-3">
-                            <p class="text-sm font-medium text-green-800">{{ session('success') }}</p>
-                        </div>
+        <!-- Floating Success/Error Messages -->
+        @if (session('success'))
+            <div class="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-green-50 border border-green-200 rounded-2xl p-4 shadow-2xl max-w-md animate-fade-in-up">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                clip-rule="evenodd"></path>
+                        </svg>
                     </div>
-                </div>
-            @endif
-
-            @if ($errors->any())
-                <div class="bg-red-50 border border-red-200 rounded-2xl p-4 mb-8">
-                    <div class="flex">
-                        <div class="flex-shrink-0">
-                            <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd"
-                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.257 3.099c.366-.446 1.12-.173 1.12.383v7.036c0 .556-.754.829-1.12.383L5.46 8.383a1 1 0 010-1.266l2.797-3.018z"
-                                    clip-rule="evenodd" />
-                            </svg>
-                        </div>
-                        <div class="ml-3">
-                            <p class="text-sm font-medium text-red-800">Terjadi kesalahan input.</p>
-                            <ul class="mt-2 text-sm text-red-700 list-disc list-inside">
-                                @foreach ($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            @endif
-
-            @if (session('error'))
-                <div class="bg-red-50 border border-red-200 rounded-2xl p-4 mb-8">
-                    <div class="flex">
-                        <div class="flex-shrink-0">
-                            <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd"
-                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                                    clip-rule="evenodd"></path>
-                            </svg>
-                        </div>
-                        <div class="ml-3">
-                            <p class="text-sm font-medium text-red-800">{{ session('error') }}</p>
-                        </div>
-                    </div>
-                </div>
-            @endif
-
-            <!-- Family Visualization -->
-            <div class="bg-white overflow-hidden shadow-xl sm:rounded-2xl mb-8">
-                <div class="p-8">
-                    <div class="text-center mb-8">
-                        <h2 class="text-2xl font-bold text-gray-900 mb-2">Pohon Keluarga</h2>
-                        <p class="text-gray-600">{{ $family->description }}</p>
-                    </div>
-
-                    <div id="family-tree"
-                        class="rounded-2xl p-8 bg-gradient-to-br from-gray-50 to-blue-50 border border-gray-100">
-                        <div class="family-tree-container" id="family-tree-container" style="width: 100%; height: 800px; position: relative; overflow: auto;">
-                        </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-green-800">{{ session('success') }}</p>
                     </div>
                 </div>
             </div>
+        @endif
+
+        @if ($errors->any())
+            <div class="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-red-50 border border-red-200 rounded-2xl p-4 shadow-2xl max-w-md animate-fade-in-up">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.257 3.099c.366-.446 1.12-.173 1.12.383v7.036c0 .556-.754.829-1.12.383L5.46 8.383a1 1 0 010-1.266l2.797-3.018z"
+                                clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-red-800">Terjadi kesalahan input.</p>
+                        <ul class="mt-2 text-sm text-red-700 list-disc list-inside">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        @if (session('error'))
+            <div class="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-red-50 border border-red-200 rounded-2xl p-4 shadow-2xl max-w-md animate-fade-in-up">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-red-800">{{ session('error') }}</p>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        <!-- Diagram Container with thin margins -->
+        <div class="flex-1 m-2 mb-2 bg-white rounded-2xl shadow-xl overflow-hidden relative" style="min-width: 0;">
+            <div id="family-tree" class="w-full h-full" style="overflow: hidden;">
+                <div class="family-tree-container" id="family-tree-container" style="width: 100%; height: 100%; position: relative; overflow: auto; overflow-x: auto; overflow-y: auto;">
+                </div>
+            </div>
+        </div>
+    </div>
 
             {{-- <!-- Family Description -->
             @if ($family->description)
@@ -122,11 +213,38 @@
             <!-- Enhanced Styles -->
             <style>
                 .family-tree-container {
-                    padding: 30px;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    min-height: 400px;
+                    width: 100%;
+                    height: 100%;
+                    position: relative;
+                    overflow: auto;
+                    padding: 20px;
+                }
+                
+                @keyframes fade-in-up {
+                    from {
+                        opacity: 0;
+                        transform: translate(-50%, -10px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translate(-50%, 0);
+                    }
+                }
+                
+                .animate-fade-in-up {
+                    animation: fade-in-up 0.3s ease-out;
+                }
+                
+                /* Auto-hide flash messages after 5 seconds */
+                .fixed.top-20 {
+                    animation: fade-in-up 0.3s ease-out, fade-out 0.3s ease-in 4.7s forwards;
+                }
+                
+                @keyframes fade-out {
+                    to {
+                        opacity: 0;
+                        transform: translate(-50%, -10px);
+                    }
                 }
 
                 .family-level {
@@ -374,6 +492,24 @@
                     align-items: center;
                     justify-content: center;
                     transition: all 0.3s ease;
+                    position: relative;
+                }
+                
+                .preview-avatar-add img,
+                .preview-avatar-edit img {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                    border-radius: 50%;
+                }
+                
+                #add_photo_preview_container {
+                    overflow: visible;
+                }
+                
+                #add_photo_remove {
+                    z-index: 10;
+                    transform: translate(25%, -25%);
                 }
 
                 .preview-avatar-add.male,
@@ -426,8 +562,13 @@
 
                 /* Animation for empty state */
                 .empty-state {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    height: 100%;
+                    width: 100%;
                     text-align: center;
-                    padding: 60px 20px;
                     color: #6b7280;
                 }
 
@@ -452,14 +593,13 @@
                         if (!members || members.length === 0) {
                             container.innerHTML = `
                                 <div class="empty-state">
-                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                                    </svg>
-                                    <h3 class="text-xl font-semibold mb-2">Belum Ada Anggota Keluarga</h3>
-                                    <p class="mb-6">Mulai membangun pohon keluarga Anda dengan menambahkan anggota pertama</p>
-                                    <button onclick="openAddModal()" class="btn-primary text-white">
-                                        Tambah Anggota Pertama
+                                    <button onclick="openAddModal()" 
+                                        class="w-20 h-20 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white rounded-full shadow-2xl hover:shadow-3xl transition-all duration-200 transform hover:scale-110 flex items-center justify-center text-4xl font-light"
+                                        title="Tambah Anggota Pertama">
+                                        +
                                     </button>
+                                    <h3 class="text-xl font-semibold mt-6 text-gray-700">Belum Ada Anggota Keluarga</h3>
+                                    <p class="mt-2 text-gray-500">Klik tombol + untuk menambahkan anggota pertama</p>
                                 </div>
                             `;
                             return;
@@ -518,8 +658,9 @@
 
                         // Enhanced D3 tree with card-style nodes
                         if (window.d3) {
-                            const width = container.clientWidth || 1400;
-                            const height = container.clientHeight || 800;
+                            // Use full container dimensions for full screen
+                            const width = container.clientWidth || window.innerWidth;
+                            const height = container.clientHeight || (window.innerHeight - 64);
 
                             // Clear container
                             container.innerHTML = '';
@@ -532,10 +673,9 @@
 
                             const g = svg.append('g').attr('transform', 'translate(60,40)');
 
-                            // Add zoom with panning
+                            // Add zoom with panning - unlimited panning
                             const zoom = d3.zoom()
                                 .scaleExtent([0.3, 2])
-                                .translateExtent([[-1000, -1000], [width + 1000, height + 1000]])
                                 .on('zoom', (event) => {
                                     g.attr('transform', event.transform);
                                 });
@@ -639,8 +779,61 @@
                                 document.getElementById('editModal').classList.remove('hidden');
                             };
                             
+                            // Helper function to check if a member has children in tree data
+                            function hasChildrenInTree(node, memberId) {
+                                if (!node) return false;
+                                
+                                // Check if this node is the member we're looking for
+                                if (node.id == memberId || (node.father_data && node.father_data.id == memberId) || 
+                                    (node.mother_data && (Array.isArray(node.mother_data) ? node.mother_data.some(m => m.id == memberId) : node.mother_data.id == memberId))) {
+                                    // Check if this node has children
+                                    if (node.children && node.children.length > 0) {
+                                        return true;
+                                    }
+                                    // Check if mother_data has children
+                                    if (node.mother_data) {
+                                        if (Array.isArray(node.mother_data)) {
+                                            const mother = node.mother_data.find(m => m.id == memberId);
+                                            if (mother && mother.children && mother.children.length > 0) {
+                                                return true;
+                                            }
+                                        } else if (node.mother_data.id == memberId && node.mother_data.children && node.mother_data.children.length > 0) {
+                                            return true;
+                                        }
+                                    }
+                                }
+                                
+                                // Recursively check children
+                                if (node.children) {
+                                    for (let child of node.children) {
+                                        if (hasChildrenInTree(child, memberId)) {
+                                            return true;
+                                        }
+                                    }
+                                }
+                                
+                                return false;
+                            }
+                            
                             // Helper function to handle delete button click
                             window.handleDeleteMember = function(memberId, familyId) {
+                                // Find member data from the members array
+                                const memberData = members.find(m => m.id == memberId);
+                                
+                                if (!memberData) {
+                                    alert('Data anggota tidak ditemukan.');
+                                    return;
+                                }
+                                
+                                // Check if member has children from database flag or tree data
+                                const hasChildren = memberData.has_children || hasChildrenInTree(treeData, memberId);
+                                
+                                if (hasChildren) {
+                                    const memberType = memberData.relation === 'mother' ? 'Ibu' : (memberData.relation === 'father' ? 'Ayah' : 'Anggota keluarga');
+                                    alert(`Tidak dapat menghapus ${memberType} yang memiliki anak.\n\nHarap hapus anak terlebih dahulu sebelum menghapus ${memberType.toLowerCase()} ini.`);
+                                    return;
+                                }
+                                
                                 if (confirm('Apakah Anda yakin ingin menghapus anggota keluarga ini?')) {
                                     const form = document.createElement('form');
                                     form.method = 'POST';
@@ -761,7 +954,8 @@
                                             d.mother = {
                                                 x: d.x + coupleGap / 2,
                                                 y: d.y,
-                                                data: d.data.mother_data
+                                                data: d.data.mother_data,
+                                                index: 0 // Set index to 0 for single mother so marriage line connects
                                             };
                                         }
                                     }
@@ -993,6 +1187,10 @@
                                             mother: m
                                         }));
                                     } else if (d.mother) {
+                                        // Ensure single mother has index 0 for marriage line connection
+                                        if (d.mother.index === undefined) {
+                                            d.mother.index = 0;
+                                        }
                                         motherFlat.push({
                                             parentId: d.id,
                                             node: d,
@@ -1032,12 +1230,13 @@
                                     .attr('stroke', '#94a3b8')
                                     .attr('stroke-width', 2)
                                     .attr('x1', d => {
-                                        // If this is first mother (index 0), connect from father
-                                        if (d.mother.index === 0) {
+                                        // If this is first mother (index 0 or undefined/null), connect from father
+                                        const motherIndex = d.mother.index ?? 0;
+                                        if (motherIndex === 0) {
                                             return d.node.father.x + nodeRight; // From right edge of father node
                                         } else {
                                             // Connect from previous mother (right edge)
-                                            const prevMotherIndex = d.mother.index - 1;
+                                            const prevMotherIndex = motherIndex - 1;
                                             const prevMother = d.node.mothers[prevMotherIndex];
                                             return prevMother ? prevMother.x + nodeRight : d.node.father.x + nodeRight;
                                         }
@@ -1049,10 +1248,11 @@
                                 marriageLines.transition()
                                     .duration(750)
                                     .attr('x1', d => {
-                                        if (d.mother.index === 0) {
+                                        const motherIndex = d.mother.index ?? 0;
+                                        if (motherIndex === 0) {
                                             return d.node.father.x + nodeRight;
                                         } else {
-                                            const prevMotherIndex = d.mother.index - 1;
+                                            const prevMotherIndex = motherIndex - 1;
                                             const prevMother = d.node.mothers[prevMotherIndex];
                                             return prevMother ? prevMother.x + nodeRight : d.node.father.x + nodeRight;
                                         }
@@ -1195,10 +1395,10 @@
                             <div id="child_order_field" style="display: none;">
                                 <label for="add_child_order" class="block text-sm font-semibold text-gray-700 mb-2">Anak Ke-</label>
                                 <input type="number" name="child_order" id="add_child_order" min="1" 
-                                    value="{{ old('child_order') }}"
-                                    class="form-input w-full px-4 py-3 text-gray-900 placeholder-gray-500"
-                                    placeholder="Masukkan urutan anak (1, 2, 3, ...)">
-                                <p class="mt-1 text-sm text-gray-500">Urutan ini menentukan posisi tampilan anak di diagram (1 = paling kiri)</p>
+                                    value="{{ old('child_order') }}" readonly
+                                    class="form-input w-full px-4 py-3 text-gray-900 placeholder-gray-500 bg-gray-100 cursor-not-allowed"
+                                    placeholder="Akan dihitung otomatis">
+                                <p class="mt-1 text-sm text-gray-500">Urutan akan dihitung otomatis berdasarkan jumlah anak dari ibu yang dipilih</p>
                                 @error('child_order')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
@@ -1254,12 +1454,20 @@
                                 <input type="file" name="photo" id="add_photo" accept="image/*"
                                     class="form-input w-full px-4 py-3 text-gray-900 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
                                 <div class="mt-4 flex justify-center">
-                                    <div class="preview-avatar-add">
-                                        <div class="family-avatar-placeholder">
+                                    <div class="preview-avatar-add relative" id="add_photo_preview_container">
+                                        <div class="family-avatar-placeholder" id="add_photo_placeholder">
                                             <svg class="w-8 h-8 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
                                                 <path
                                                     d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM12 5c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zM12 19.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" />
                                             </svg>
+                                        </div>
+                                        <div id="add_photo_preview" class="hidden">
+                                            <img id="add_photo_preview_img" src="" alt="Preview" class="w-full h-full object-cover">
+                                            <button type="button" id="add_photo_remove" class="absolute top-0 right-0 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition-colors shadow-lg" title="Hapus foto">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                </svg>
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -1650,14 +1858,16 @@
                 function closeAddModal() {
                     document.getElementById('addModal').classList.add('hidden');
                     document.getElementById('addForm').reset();
-                    const preview = document.querySelector('.preview-avatar-add');
-                    if (preview) {
-                        preview.innerHTML = `<div class="family-avatar-placeholder">
-                    <svg class="w-8 h-8 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM12 5c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zM12 19.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" />
-                    </svg>
-                </div>`;
-                    }
+                    
+                    // Reset photo preview
+                    const placeholder = document.getElementById('add_photo_placeholder');
+                    const preview = document.getElementById('add_photo_preview');
+                    const addPhotoInput = document.getElementById('add_photo');
+                    
+                    if (placeholder) placeholder.style.display = 'block';
+                    if (preview) preview.classList.add('hidden');
+                    if (addPhotoInput) addPhotoInput.value = '';
+                    
                     // Reset gender field state
                     const genderSelect = document.getElementById('add_gender');
                     if (genderSelect) {
@@ -1770,6 +1980,11 @@
                                 parentMotherField.style.display = 'block';
                                 childOrderField.style.display = 'block';
                                 parentIdSelect.required = true;
+                                
+                                // Auto-calculate child_order when parent is selected
+                                if (parentIdSelect.value) {
+                                    calculateNextChildOrder(parentIdSelect.value);
+                                }
                             } else {
                                 parentMotherField.style.display = 'none';
                                 childOrderField.style.display = 'none';
@@ -1778,6 +1993,47 @@
                                 childOrderInput.value = '';
                             }
                         }
+                    }
+                    
+                    // Function to calculate next child order for a parent
+                    function calculateNextChildOrder(parentId) {
+                        const childOrderInput = document.getElementById('add_child_order');
+                        if (!childOrderInput || !parentId) {
+                            return;
+                        }
+                        
+                        // Show loading state
+                        childOrderInput.value = 'Menghitung...';
+                        
+                        // Fetch next child order from API
+                        fetch(`/user/family/{{ $family->id }}/members/${parentId}/next-child-order`)
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.next_order) {
+                                    childOrderInput.value = data.next_order;
+                                } else {
+                                    childOrderInput.value = '1';
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error calculating child order:', error);
+                                childOrderInput.value = '1';
+                            });
+                    }
+                    
+                    // Add event listener for parent_id change
+                    const parentIdSelect = document.getElementById('add_parent_id');
+                    if (parentIdSelect) {
+                        parentIdSelect.addEventListener('change', function() {
+                            if (this.value) {
+                                calculateNextChildOrder(this.value);
+                            } else {
+                                const childOrderInput = document.getElementById('add_child_order');
+                                if (childOrderInput) {
+                                    childOrderInput.value = '';
+                                }
+                            }
+                        });
                     }
 
                     // Also update when modal is opened (in case it's opened via button click)
@@ -1815,6 +2071,64 @@
                         });
                     });
 
+                    // Function to preview image
+                    function previewImage(input, previewSelector) {
+                        const file = input.files[0];
+                        if (file) {
+                            const reader = new FileReader();
+                            reader.onload = function(e) {
+                                const previewContainer = document.querySelector(previewSelector);
+                                const previewImg = previewContainer.querySelector('img');
+                                const placeholder = previewContainer.querySelector('.family-avatar-placeholder');
+                                
+                                if (previewImg) {
+                                    previewImg.src = e.target.result;
+                                    if (placeholder) placeholder.style.display = 'none';
+                                    previewImg.parentElement.classList.remove('hidden');
+                                }
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                    }
+
+                    // Add event listener for add photo preview
+                    const addPhotoInput = document.getElementById('add_photo');
+                    if (addPhotoInput) {
+                        addPhotoInput.addEventListener('change', function() {
+                            const file = this.files[0];
+                            if (file) {
+                                const reader = new FileReader();
+                                reader.onload = function(e) {
+                                    const placeholder = document.getElementById('add_photo_placeholder');
+                                    const preview = document.getElementById('add_photo_preview');
+                                    const previewImg = document.getElementById('add_photo_preview_img');
+                                    
+                                    if (placeholder) placeholder.style.display = 'none';
+                                    if (previewImg) previewImg.src = e.target.result;
+                                    if (preview) preview.classList.remove('hidden');
+                                };
+                                reader.readAsDataURL(file);
+                            }
+                        });
+                    }
+
+                    // Add event listener for remove photo button
+                    const addPhotoRemove = document.getElementById('add_photo_remove');
+                    if (addPhotoRemove) {
+                        addPhotoRemove.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            
+                            const addPhotoInput = document.getElementById('add_photo');
+                            const placeholder = document.getElementById('add_photo_placeholder');
+                            const preview = document.getElementById('add_photo_preview');
+                            
+                            if (addPhotoInput) addPhotoInput.value = '';
+                            if (placeholder) placeholder.style.display = 'block';
+                            if (preview) preview.classList.add('hidden');
+                        });
+                    }
+
                     // Add event listener for edit photo preview
                     const editPhotoInput = document.getElementById('edit_photo');
                     if (editPhotoInput) {
@@ -1838,5 +2152,45 @@
                         });
                     }
                 });
+            </script>
+
+            <!-- html2canvas for image export -->
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+            <script>
+                function exportAsImage() {
+                    const container = document.getElementById('family-tree-container');
+                    const familyName = '{{ $family->family_name }}';
+                    
+                    // Show loading indicator
+                    const loading = document.createElement('div');
+                    loading.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center';
+                    loading.innerHTML = '<div class="bg-white rounded-lg p-6"><p class="text-gray-700">Mengekspor diagram...</p></div>';
+                    document.body.appendChild(loading);
+                    
+                    html2canvas(container, {
+                        backgroundColor: '#ffffff',
+                        scale: 2,
+                        logging: false,
+                        useCORS: true
+                    }).then(canvas => {
+                        // Create download link
+                        const link = document.createElement('a');
+                        link.download = familyName + '_silsilah.png';
+                        link.href = canvas.toDataURL('image/png');
+                        link.click();
+                        
+                        // Remove loading indicator
+                        document.body.removeChild(loading);
+                    }).catch(err => {
+                        console.error('Export error:', err);
+                        alert('Gagal mengekspor diagram. Silakan coba lagi.');
+                        document.body.removeChild(loading);
+                    });
+                }
+            </script>
+            
+            <script>
+                // Add class to body to prevent scrolling (only on this page)
+                document.body.classList.add('family-diagram-no-scroll');
             </script>
         @endsection

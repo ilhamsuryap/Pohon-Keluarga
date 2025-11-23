@@ -102,7 +102,13 @@
                                         data._mothersWithChildren = [];
                                         data.mother_data.forEach((mother, idx) => {
                                             if (mother.children && mother.children.length > 0) {
-                                                const processedChildren = mother.children.map(child => preprocessTreeData(child));
+                                                const processedChildren = mother.children.map(child => {
+                                                    // Mark each child with its mother's ID for proper linking
+                                                    const processedChild = preprocessTreeData(child);
+                                                    processedChild._motherId = mother.id;
+                                                    processedChild._motherIndex = idx;
+                                                    return processedChild;
+                                                });
                                                 data._mothersWithChildren.push({
                                                     index: idx,
                                                     motherId: mother.id,
@@ -113,6 +119,13 @@
                                                 data.children = [...data.children, ...processedChildren];
                                                 // Remove children from mother_data (already added to couple node)
                                                 delete mother.children;
+                                            } else {
+                                                // Even if mother has no children, add entry to maintain index consistency
+                                                data._mothersWithChildren.push({
+                                                    index: idx,
+                                                    motherId: mother.id,
+                                                    children: []
+                                                });
                                             }
                                         });
                                     }
@@ -227,11 +240,14 @@
                                         d.data._mothersWithChildren.forEach(mwc => {
                                             const mother = d.mothers && d.mothers[mwc.index];
                                             const motherId = mwc.motherId;
-                                            if (mother && mwc.children) {
+                                            if (mother && mwc.children && mwc.children.length > 0) {
                                                 mwc.children.forEach(childData => {
                                                     // Use multiple identifiers to match child
                                                     const childId = childData.id || childData.name;
                                                     const childName = childData.name;
+                                                    // Also use _motherId if available (from preprocessing)
+                                                    const childMotherId = childData._motherId;
+                                                    
                                                     if (childId) {
                                                         motherChildrenMap.set(childId, mother);
                                                         parentIdMap.set(childId, motherId);
@@ -239,6 +255,15 @@
                                                     if (childName && childName !== childId) {
                                                         motherChildrenMap.set(childName, mother);
                                                         parentIdMap.set(childName, motherId);
+                                                    }
+                                                    // Use _motherId as additional identifier
+                                                    if (childMotherId && childMotherId === motherId) {
+                                                        if (childId) {
+                                                            motherChildrenMap.set('mother_' + childMotherId + '_' + childId, mother);
+                                                        }
+                                                        if (childName) {
+                                                            motherChildrenMap.set('mother_' + childMotherId + '_' + childName, mother);
+                                                        }
                                                     }
                                                 });
                                             }
@@ -291,15 +316,9 @@
                                 const nodeEnter = node.enter().append('g')
                                     .attr('class', 'person-node')
                                     .attr('transform', d => `translate(${source.x0},${source.y0})`)
-                                    .on('click', (_, d) => {
-                                        if (d.children) {
-                                            d._children = d.children;
-                                            d.children = null;
-                                        } else {
-                                            d.children = d._children;
-                                            d._children = null;
-                                        }
-                                        update(d);
+                                    .on('click', (event, d) => {
+                                        event.stopPropagation();
+                                        showMemberDetail(d.data);
                                     });
 
                                 // Add profile image for person nodes
@@ -307,7 +326,8 @@
                                     .attr('r', 30)
                                     .attr('fill', '#f3f4f6')
                                     .attr('stroke', d => d.data.gender === 'female' ? '#ec4899' : '#3b82f6')
-                                    .attr('stroke-width', 3);
+                                    .attr('stroke-width', 3)
+                                    .style('cursor', 'pointer');
 
                                 nodeEnter.append('image')
                                     .attr('x', -25)
@@ -360,14 +380,19 @@
 
                                 const fatherEnter = fatherNode.enter().append('g')
                                     .attr('class', 'father-node')
-                                    .attr('transform', d => `translate(${d.father.x},${d.father.y})`);
+                                    .attr('transform', d => `translate(${d.father.x},${d.father.y})`)
+                                    .on('click', (event, d) => {
+                                        event.stopPropagation();
+                                        showMemberDetail(d.father.data);
+                                    });
 
                                 // Father profile image (blue border)
                                 fatherEnter.append('circle')
                                     .attr('r', 30)
                                     .attr('fill', '#f3f4f6')
                                     .attr('stroke', '#3b82f6')
-                                    .attr('stroke-width', 3);
+                                    .attr('stroke-width', 3)
+                                    .style('cursor', 'pointer');
 
                                 fatherEnter.append('image')
                                     .attr('x', -25)
@@ -438,14 +463,19 @@
 
                                 const motherEnter = motherNode.enter().append('g')
                                     .attr('class', 'mother-node')
-                                    .attr('transform', d => `translate(${d.mother.x},${d.mother.y})`);
+                                    .attr('transform', d => `translate(${d.mother.x},${d.mother.y})`)
+                                    .on('click', (event, d) => {
+                                        event.stopPropagation();
+                                        showMemberDetail(d.mother.data);
+                                    });
 
                                 // Mother profile image (pink border)
                                 motherEnter.append('circle')
                                     .attr('r', 30)
                                     .attr('fill', '#f3f4f6')
                                     .attr('stroke', '#ec4899')
-                                    .attr('stroke-width', 3);
+                                    .attr('stroke-width', 3)
+                                    .style('cursor', 'pointer');
 
                                 motherEnter.append('image')
                                     .attr('x', -25)
@@ -560,11 +590,35 @@
                                     const targetData = linkItem.target.data;
                                     const childId = targetData.id || targetData.name;
                                     const childName = targetData.name;
+                                    const childMotherId = targetData._motherId; // From preprocessing
                                     
-                                    // Check both ID and name
-                                    let motherNode = motherChildrenMap.get(childId);
+                                    // Check multiple identifiers to find the correct mother
+                                    let motherNode = null;
+                                    
+                                    // First, try using _motherId if available (most reliable)
+                                    if (childMotherId) {
+                                        // Find mother by matching _motherId
+                                        const sourceCouple = linkItem.source.data;
+                                        if (sourceCouple && sourceCouple._mothersWithChildren) {
+                                            const mwc = sourceCouple._mothersWithChildren.find(m => m.motherId === childMotherId);
+                                            if (mwc && linkItem.source.mothers) {
+                                                motherNode = linkItem.source.mothers[mwc.index];
+                                            }
+                                        }
+                                    }
+                                    
+                                    // Fallback to map lookup
+                                    if (!motherNode) {
+                                        motherNode = motherChildrenMap.get(childId);
+                                    }
                                     if (!motherNode && childName) {
                                         motherNode = motherChildrenMap.get(childName);
+                                    }
+                                    if (!motherNode && childMotherId) {
+                                        motherNode = motherChildrenMap.get('mother_' + childMotherId + '_' + childId);
+                                    }
+                                    if (!motherNode && childMotherId && childName) {
+                                        motherNode = motherChildrenMap.get('mother_' + childMotherId + '_' + childName);
                                     }
                                     
                                     if (motherNode) {
@@ -616,6 +670,11 @@
                                             const lastMother = d.source.mothers[d.source.mothers.length - 1];
                                             sourceX = (d.source.father.x + lastMother.x) / 2;
                                         }
+                                    }
+
+                                    // If target is a couple node, link should point to the father node (not the center)
+                                    if (d.target.data.type === 'couple' && d.target.father) {
+                                        targetX = d.target.father.x;
                                     }
 
                                     return diagonal({
@@ -700,4 +759,266 @@
             </div>
         </div>
     </div>
+
+    <!-- Member Detail Modal -->
+    <div id="detailModal"
+        class="fixed inset-0 bg-black bg-opacity-50 overflow-y-auto hidden z-50 backdrop-blur-sm">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="modal-content relative w-full max-w-lg p-6 bg-white rounded-2xl shadow-2xl">
+                <button onclick="closeDetailModal()"
+                    class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors z-10">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+
+                <div class="text-center mb-6">
+                    <div
+                        class="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                        <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900">Detail Anggota Keluarga</h3>
+                    <p class="text-gray-600 mt-2">Informasi lengkap anggota keluarga</p>
+                </div>
+
+                <div class="space-y-6">
+                    <!-- Photo Section -->
+                    <div class="flex justify-center">
+                        <div id="detail-photo"
+                            class="w-32 h-32 rounded-2xl overflow-hidden border-4 border-white shadow-lg bg-gradient-to-br from-gray-100 to-gray-200">
+                            <!-- Photo will be inserted here -->
+                        </div>
+                    </div>
+
+                    <!-- Information Grid -->
+                    <div class="grid grid-cols-1 gap-4">
+                        <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
+                            <label class="block text-sm font-semibold text-gray-600 mb-1">Nama Lengkap</label>
+                            <p id="detail-name" class="text-lg font-medium text-gray-900">-</p>
+                        </div>
+                        <div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200">
+                            <label class="block text-sm font-semibold text-gray-600 mb-1">NIK</label>
+                            <p id="detail-nik" class="text-lg font-medium text-gray-900">-</p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-100">
+                                <label class="block text-sm font-semibold text-gray-600 mb-1">Hubungan</label>
+                                <p id="detail-relation" class="text-lg font-medium text-gray-900">-</p>
+                            </div>
+                            <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border border-green-100">
+                                <label class="block text-sm font-semibold text-gray-600 mb-1">Jenis Kelamin</label>
+                                <p id="detail-gender" class="text-lg font-medium text-gray-900">-</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl p-4 border border-yellow-100">
+                                <label class="block text-sm font-semibold text-gray-600 mb-1">Tanggal Lahir</label>
+                                <p id="detail-birth-date" class="text-lg font-medium text-gray-900">-</p>
+                            </div>
+                            <div class="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-xl p-4 border border-cyan-100">
+                                <label class="block text-sm font-semibold text-gray-600 mb-1">Usia</label>
+                                <p id="detail-age" class="text-lg font-medium text-gray-900">-</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200">
+                            <label class="block text-sm font-semibold text-gray-600 mb-1">Deskripsi</label>
+                            <p id="detail-description" class="text-gray-900 leading-relaxed">-</p>
+                        </div>
+
+                        <div id="detail-death-section" class="bg-gradient-to-br from-red-50 to-pink-50 rounded-xl p-4 border border-red-100 hidden">
+                            <label class="block text-sm font-semibold text-red-600 mb-1">Tanggal Wafat</label>
+                            <p id="detail-death-date" class="text-lg font-medium text-red-900">-</p>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex space-x-4 pt-4">
+                        <button type="button" onclick="closeDetailModal()"
+                            class="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200 font-semibold">
+                            Tutup
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .modal-content {
+            animation: modalFadeIn 0.3s ease-out;
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95) translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .person-node circle,
+        .father-node circle,
+        .mother-node circle {
+            transition: all 0.2s ease;
+        }
+
+        .person-node:hover circle,
+        .father-node:hover circle,
+        .mother-node:hover circle {
+            stroke-width: 4;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+        }
+    </style>
+
+    <script>
+        // Function to show member detail
+        function showMemberDetail(member) {
+            if (!member) return;
+            
+            // Debug: log member data
+            console.log('Member data:', member);
+
+            // Update photo
+            const photoDiv = document.getElementById('detail-photo');
+            if (member.photo) {
+                const photoUrl = member.photo.startsWith('http') ? member.photo : `/storage/${member.photo}`;
+                photoDiv.innerHTML = `<img src="${photoUrl}" class="w-full h-full object-cover" alt="${member.name || 'Member'}">`;
+            } else {
+                const defaultAvatar = member.gender === 'female' ? '/images/female-avatar.svg' : '/images/male-avatar.svg';
+                photoDiv.innerHTML = `<img src="${defaultAvatar}" class="w-full h-full object-cover" alt="${member.name || 'Member'}">`;
+            }
+
+            // Update information
+            document.getElementById('detail-name').textContent = member.name || '-';
+            document.getElementById('detail-nik').textContent = member.nik || '-';
+            
+            // Map relation
+            const relationMap = {
+                'father': 'Ayah',
+                'mother': 'Ibu',
+                'child': 'Anak'
+            };
+            document.getElementById('detail-relation').textContent = relationMap[member.relation] || member.relation || '-';
+            
+            // Map gender
+            document.getElementById('detail-gender').textContent = member.gender === 'male' ? 'Laki-laki' : (member.gender === 'female' ? 'Perempuan' : '-');
+
+            // Format birth date
+            const birthDateStr = member.birth_date;
+            if (birthDateStr && birthDateStr !== 'null' && birthDateStr !== null && (typeof birthDateStr === 'string' ? birthDateStr.trim() !== '' : true)) {
+                try {
+                    // Handle different date formats (Y-m-d, ISO string, etc.)
+                    let birthDate;
+                    if (typeof birthDateStr === 'string') {
+                        // If it's already in Y-m-d format, parse it correctly
+                        if (birthDateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                            const [year, month, day] = birthDateStr.split('-');
+                            birthDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                        } else {
+                            birthDate = new Date(birthDateStr);
+                        }
+                    } else {
+                        birthDate = new Date(birthDateStr);
+                    }
+
+                    // Check if date is valid
+                    if (!isNaN(birthDate.getTime())) {
+                        const formattedBirthDate = birthDate.toLocaleDateString('id-ID', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                        });
+                        document.getElementById('detail-birth-date').textContent = formattedBirthDate;
+
+                        // Calculate and display age
+                        const today = new Date();
+                        const age = Math.floor((today - birthDate) / (365.25 * 24 * 60 * 60 * 1000));
+                        document.getElementById('detail-age').textContent = age + ' tahun';
+                    } else {
+                        // Invalid date
+                        document.getElementById('detail-birth-date').textContent = member.birth_date || '-';
+                        document.getElementById('detail-age').textContent = '-';
+                    }
+                } catch (e) {
+                    console.error('Error parsing birth date:', e, birthDateStr);
+                    document.getElementById('detail-birth-date').textContent = birthDateStr || '-';
+                    document.getElementById('detail-age').textContent = '-';
+                }
+            } else {
+                document.getElementById('detail-birth-date').textContent = '-';
+                document.getElementById('detail-age').textContent = '-';
+            }
+
+            // Update description
+            document.getElementById('detail-description').textContent = member.description || 'Tidak ada deskripsi';
+
+            // Handle death date if exists
+            if (member.death_date) {
+                try {
+                    let deathDate;
+                    if (typeof member.death_date === 'string') {
+                        if (member.death_date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                            const [year, month, day] = member.death_date.split('-');
+                            deathDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                        } else {
+                            deathDate = new Date(member.death_date);
+                        }
+                    } else {
+                        deathDate = new Date(member.death_date);
+                    }
+
+                    if (!isNaN(deathDate.getTime())) {
+                        const formattedDeathDate = deathDate.toLocaleDateString('id-ID', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                        });
+                        document.getElementById('detail-death-date').textContent = formattedDeathDate;
+                        document.getElementById('detail-death-section').classList.remove('hidden');
+                    } else {
+                        document.getElementById('detail-death-section').classList.add('hidden');
+                    }
+                } catch (e) {
+                    console.error('Error parsing death date:', e, member.death_date);
+                    document.getElementById('detail-death-section').classList.add('hidden');
+                }
+            } else {
+                document.getElementById('detail-death-section').classList.add('hidden');
+            }
+
+            // Show modal
+            document.getElementById('detailModal').classList.remove('hidden');
+        }
+
+        // Function to close detail modal
+        function closeDetailModal() {
+            document.getElementById('detailModal').classList.add('hidden');
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('detailModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDetailModal();
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeDetailModal();
+            }
+        });
+    </script>
 </x-app-layout>

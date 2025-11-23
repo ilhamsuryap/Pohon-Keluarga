@@ -54,9 +54,132 @@ class FamilyTreeService
     }
 
     /**
+     * Build a simple family tree for a single family only (no NIK connection).
+     * Returns nested array with separate nodes for each family member including profile photos.
+     * This method is used for the family/show page where we only want to see one family.
+     */
+    public function buildSimpleFamilyTree(int $familyId): array
+    {
+        $family = Family::find($familyId);
+        if (!$family) {
+            return ['name' => "Keluarga $familyId", 'type' => 'family', 'children' => []];
+        }
+
+        // Get only members from this specific family (no NIK connection)
+        $members = FamilyMember::where('family_id', $familyId)->get([
+            'id','family_id','name','nik','gender','birth_date','death_date','relation','parent_id','child_order','photo','description'
+        ]);
+
+        if ($members->isEmpty()) {
+            return ['name' => $family->family_name, 'type' => 'family', 'children' => []];
+        }
+
+        // Group members by relation
+        $father = $members->firstWhere('relation', 'father');
+        $mothers = $members->where('relation', 'mother')->values();
+        
+        // Get all children and group by parent_id
+        $allChildren = $members->where('relation', 'child');
+        $childrenByParentId = $allChildren->groupBy('parent_id');
+        $childrenWithoutParent = $childrenByParentId->get(null, collect())->sortBy(function($child) {
+            return $child->child_order ?? $child->birth_date ?? '';
+        })->values();
+
+        // Helper function to create person node
+        $createPersonNode = function($member) {
+            return [
+                'id' => $member->id,
+                'name' => $member->name,
+                'nik' => $member->nik,
+                'gender' => $member->gender,
+                'birth_date' => $member->birth_date ? $member->birth_date->format('Y-m-d') : null,
+                'death_date' => $member->death_date ? $member->death_date->format('Y-m-d') : null,
+                'photo' => $member->photo,
+                'description' => $member->description,
+            ];
+        };
+
+        // Build children nodes recursively (only for this family, no cross-family connection)
+        $buildChildrenNodes = function($childrenList) use (&$buildChildrenNodes, $createPersonNode, $childrenByParentId) {
+            $nodes = [];
+            foreach ($childrenList as $child) {
+                // Get children of this child (recursive)
+                $grandChildren = $childrenByParentId->get($child->id, collect())
+                    ->sortBy(function($c) {
+                        return $c->child_order ?? $c->birth_date ?? '';
+                    })->values();
+                
+                $childNodes = $buildChildrenNodes($grandChildren);
+                
+                $node = $createPersonNode($child);
+                $node['type'] = 'person';
+                $node['children'] = $childNodes;
+                $nodes[] = $node;
+            }
+            return $nodes;
+        };
+
+        // Build children nodes for each mother (based on parent_id)
+        $motherChildrenMap = [];
+        foreach ($childrenByParentId as $parentId => $children) {
+            if ($parentId === null) continue; // Skip children without parent
+            $sortedChildren = $children->sortBy(function($child) {
+                return $child->child_order ?? $child->birth_date ?? '';
+            })->values();
+            $motherChildrenMap[$parentId] = $buildChildrenNodes($sortedChildren);
+        }
+
+        // Build default children nodes (without parent_id)
+        $childrenNodes = $buildChildrenNodes($childrenWithoutParent);
+
+        // Build couple node
+        $fatherData = null;
+        if ($father) {
+            $fatherData = $createPersonNode($father);
+        }
+
+        $mothersData = [];
+        foreach ($mothers as $mother) {
+            $motherNode = $createPersonNode($mother);
+            // Attach children to this mother if they have parent_id pointing to her
+            if (isset($motherChildrenMap[$mother->id])) {
+                $motherNode['children'] = $motherChildrenMap[$mother->id];
+            }
+            $mothersData[] = $motherNode;
+        }
+
+        if ($fatherData || !empty($mothersData)) {
+            $result = [
+                'type' => 'couple',
+                'name' => $family->family_name,
+                'father_data' => $fatherData,
+                'children' => $childrenNodes // Default children (without parent_id)
+            ];
+            
+            if (!empty($mothersData)) {
+                $result['mother_data'] = count($mothersData) === 1 ? $mothersData[0] : $mothersData;
+            }
+            
+            return $result;
+        }
+
+        // If no parents, return children as root
+        if (!empty($childrenNodes)) {
+            return [
+                'type' => 'family',
+                'name' => $family->family_name,
+                'children' => $childrenNodes
+            ];
+        }
+
+        return ['name' => $family->family_name, 'type' => 'family', 'children' => []];
+    }
+
+    /**
      * Build a recursive family tree starting from a family_id.
      * Returns nested array with separate nodes for each family member including profile photos.
      * Couples are positioned as separate but horizontally aligned nodes.
+     * This method includes NIK-based connection across multiple families.
      */
     public function buildFamilyTree(int $familyId): array
     {
@@ -169,16 +292,28 @@ class FamilyTreeService
             // Bangun anak: kelompokkan berdasarkan parent_id
             // Children dengan parent_id akan ditambahkan ke mother yang sesuai
             // Children tanpa parent_id akan ditambahkan ke couple node (default)
+            // IMPORTANT: Only group children by parent_id if the parent is in the SAME family
             $childrenByParentId = [];
             $childrenWithoutParent = [];
             
+            // Get all parent IDs in this family (father + mothers)
+            $parentIdsInFamily = [];
+            if ($father) {
+                $parentIdsInFamily[] = $father->id;
+            }
+            foreach ($mother as $m) {
+                $parentIdsInFamily[] = $m->id;
+            }
+            
             foreach (($info['children'] ?? collect()) as $child) {
-                if ($child->parent_id) {
+                if ($child->parent_id && in_array($child->parent_id, $parentIdsInFamily)) {
+                    // Only group by parent_id if parent is in the same family
                     if (!isset($childrenByParentId[$child->parent_id])) {
                         $childrenByParentId[$child->parent_id] = [];
                     }
                     $childrenByParentId[$child->parent_id][] = $child;
                 } else {
+                    // Child without parent_id or parent_id points to different family
                     $childrenWithoutParent[] = $child;
                 }
             }
@@ -203,7 +338,13 @@ class FamilyTreeService
             };
 
             // Build children nodes for each mother (based on parent_id)
+            // IMPORTANT: Initialize motherChildrenMap for ALL mothers first, even if they have no children
             $motherChildrenMap = [];
+            foreach ($mother as $mObj) {
+                $motherChildrenMap[$mObj->id] = []; // Initialize empty array for each mother
+            }
+            
+            // Now populate children for each parent_id
             foreach ($childrenByParentId as $parentId => $children) {
                 $childrenNodes = [];
                 foreach ($children as $child) {
@@ -230,7 +371,10 @@ class FamilyTreeService
                 // Remove birth_date from output
                 foreach ($childrenNodes as &$cn) { unset($cn['birth_date']); }
                 unset($cn);
-                $motherChildrenMap[$parentId] = $childrenNodes;
+                // Only assign if parentId exists in motherChildrenMap (i.e., it's a mother in this family)
+                if (isset($motherChildrenMap[$parentId])) {
+                    $motherChildrenMap[$parentId] = $childrenNodes;
+                }
             }
 
             // Build children nodes without parent_id (default children for couple)

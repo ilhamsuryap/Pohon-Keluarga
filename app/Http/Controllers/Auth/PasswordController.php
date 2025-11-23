@@ -24,6 +24,11 @@ class PasswordController extends Controller
             'password' => Hash::make($validated['password']),
         ]);
 
+        // Redirect ke admin profile jika user adalah admin
+        if ($request->user()->isAdmin()) {
+            return redirect()->route('admin.profile')->with('status', 'password-updated');
+        }
+
         return back()->with('status', 'password-updated');
     }
 }

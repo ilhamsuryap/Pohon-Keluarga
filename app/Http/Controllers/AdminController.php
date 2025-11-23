@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Family;
 use App\Models\PaymentSetting;
+use App\Models\Config;
 use App\Services\WhatsAppService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -43,6 +44,7 @@ class AdminController extends Controller
 
     public function approveUser(Request $request, User $user)
     {
+        // Setujui user dan pembayaran sekaligus
         $user->update([
             'is_approved' => true,
             'payment_status' => 'approved',
@@ -52,7 +54,7 @@ class AdminController extends Controller
         // Send WhatsApp notification to user
         $this->whatsappService->notifyUserApproval($user);
 
-        return back()->with('success', 'User berhasil disetujui dan notifikasi WhatsApp telah dikirim.');
+        return back()->with('success', 'User dan pembayaran berhasil disetujui. Notifikasi WhatsApp telah dikirim.');
     }
 
     public function paymentSettings()
@@ -113,5 +115,54 @@ class AdminController extends Controller
         $this->whatsappService->notifyUserRejection($user, $request->rejection_reason);
 
         return back()->with('success', 'Pembayaran berhasil ditolak dan notifikasi WhatsApp telah dikirim.');
+    }
+
+    public function configSettings()
+    {
+        $configKeys = [
+            'whatsapp_api_url',
+            'whatsapp_api_key',
+            'whatsapp_device_key',
+            'whatsapp_admin_phones',
+        ];
+
+        $configs = Config::whereIn('key', $configKeys)->get()->keyBy('key');
+        
+        // Ensure all keys exist, create empty config objects if missing
+        foreach ($configKeys as $key) {
+            if (!isset($configs[$key])) {
+                $configs[$key] = new \App\Models\Config([
+                    'key' => $key,
+                    'value' => $key === 'whatsapp_api_url' ? 'https://api.quods.id/api' : '',
+                    'type' => 'text'
+                ]);
+            }
+        }
+
+        return view('admin.config-settings', compact('configs'));
+    }
+
+    public function updateConfigSettings(Request $request)
+    {
+        $request->validate([
+            'whatsapp_api_url' => 'required|url',
+            'whatsapp_api_key' => 'required|string',
+            'whatsapp_device_key' => 'required|string',
+            'whatsapp_admin_phones' => 'required|string',
+        ]);
+
+        Config::set('whatsapp_api_url', $request->whatsapp_api_url, 'URL API WhatsApp Quods', 'text');
+        Config::set('whatsapp_api_key', $request->whatsapp_api_key, 'Bearer Token API WhatsApp Quods', 'text');
+        Config::set('whatsapp_device_key', $request->whatsapp_device_key, 'Device Key API WhatsApp Quods', 'text');
+        Config::set('whatsapp_admin_phones', $request->whatsapp_admin_phones, 'Nomor WhatsApp Admin (pisahkan dengan koma jika lebih dari satu)', 'text');
+
+        return back()->with('success', 'Pengaturan konfigurasi berhasil diperbarui.');
+    }
+
+    public function profile(Request $request)
+    {
+        return view('admin.profile', [
+            'user' => $request->user(),
+        ]);
     }
 }

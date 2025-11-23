@@ -132,3 +132,6 @@ function transformToHierarchy(members) {
 
     return root;
 }
+
+// Export for use in other modules
+export { FamilyTree, transformToHierarchy };

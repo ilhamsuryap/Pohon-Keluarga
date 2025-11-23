@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Config;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -13,9 +14,9 @@ class WhatsAppService
 
     public function __construct()
     {
-        $this->apiUrl = 'https://api.quods.id/api';
-        $this->apiKey = 'TMeTyUimv75LmlHRlCutowWU2z86QW';
-        $this->deviceKey = 'UMSZSzMyen40UdD';
+        $this->apiUrl = Config::get('whatsapp_api_url', 'https://api.quods.id/api');
+        $this->apiKey = Config::get('whatsapp_api_key', 'al018FyLBRT1bwG3Z4C8gACULNZ3o5');
+        $this->deviceKey = Config::get('whatsapp_device_key', 'sEVok3IhQs4avF5');
     }
 
     private function formatPhoneNumber(string $phoneNumber): string
@@ -81,12 +82,18 @@ class WhatsAppService
     }
 
     /**
-     * Send notification to admin about new payment proof (hardcoded phone)
+     * Send notification to admin about new payment proof
      */
     public function notifyAdminNewPayment($user)
     {
-        // Hardcoded admin phone number as requested
-        $adminPhones = ['6285941051469'];
+        // Get admin phone numbers from config (can be comma-separated)
+        $adminPhonesConfig = Config::get('whatsapp_admin_phones', '6285941051469');
+        $adminPhones = array_filter(array_map('trim', explode(',', $adminPhonesConfig)));
+        
+        // Fallback to default if empty
+        if (empty($adminPhones)) {
+            $adminPhones = ['6285941051469'];
+        }
 
         $fileUrl = $user->getPaymentProofUrl();
 

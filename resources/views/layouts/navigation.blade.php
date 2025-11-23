@@ -13,23 +13,29 @@
         background-clip: text;
     }
 </style>
-<nav x-data="{ open: false }" class="bg-white border-b border-gray-100">
+<nav x-data="{ open: false }" class="bg-white/95 backdrop-blur-sm border-b border-gray-200/50 shadow-md sticky top-0 z-50">
 
     <!-- Primary Navigation Menu -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-            <div class="flex">
+    <div class="w-full px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+            <div class="flex items-center">
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
-                    {{-- <a href="{{ auth()->check() ? route('welcome') : url('/') }}">
-                        <img src="{{ asset('storage/pohonLogo.png') }}" alt="Logo" class="block h-20 w-auto" />
-                    </a> --}}
-                    <span class="text-2xl font-bold gradient-text">SilsilahKita</span>
+                    <a href="{{ auth()->check() ? route('dashboard') : url('/') }}" class="flex items-center space-x-3 group">
+                        <div class="relative">
+                            <div class="w-12 h-12 rounded-xl bg-white p-1.5 shadow-md group-hover:shadow-lg transition-all duration-200 group-hover:scale-105 border border-gray-100">
+                                <img src="{{ asset('storage/pohonLogo.png') }}" alt="SilsilahKita Logo" class="w-full h-full object-contain rounded-lg">
+                            </div>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-xl font-bold gradient-text hidden sm:block leading-tight">SilsilahKita</span>
+                            <span class="text-xs text-gray-500 hidden sm:block leading-tight">Pohon Keluarga Digital</span>
+                        </div>
+                    </a>
                 </div>
 
-
                 <!-- Navigation Links -->
-                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex ml-auto">
+                <div class="hidden space-x-1 sm:-my-px sm:ms-10 sm:flex">
                     @auth
                         @if (Auth::user()->isAdmin())
                             <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
@@ -41,11 +47,8 @@
                             <x-nav-link href="{{ route('dashboard') }}" :active="request()->routeIs('dashboard') || request()->routeIs('user.dashboard')">
                                 {{ __('Home') }}
                             </x-nav-link>
-                            <x-nav-link :href="route('user.family.index')" :active="request()->routeIs('user.family.*')" class="flex items-center">
+                            <x-nav-link :href="route('user.family.index')" :active="request()->routeIs('user.family.*') && !request()->routeIs('user.family.tree')" class="flex items-center">
                                 {{ __('Diagram Silsilah') }}
-                            </x-nav-link>
-                            <x-nav-link :href="route('user.family.tree')" :active="request()->routeIs('user.family.tree')" class="flex items-center">
-                                {{ __('Pohon Keluarga') }}
                             </x-nav-link>
                             <x-nav-link :href="route('user.calendar')" :active="request()->routeIs('user.calendar')" class="flex items-center">
                                 {{ __('Kalender') }}
@@ -69,11 +72,16 @@
                     <x-dropdown align="right" width="48">
                         <x-slot name="trigger">
                             <button
-                                class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
-                                <div>{{ Auth::user()->name }}</div>
+                                class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all duration-200 shadow-sm">
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center text-white text-xs font-bold shadow-md">
+                                        {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                                    </div>
+                                    <span class="hidden md:block">{{ Auth::user()->name }}</span>
+                                </div>
 
-                                <div class="ms-1">
-                                    <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg"
+                                <div class="ms-2">
+                                    <svg class="fill-current h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg"
                                         viewBox="0 0 20 20">
                                         <path fill-rule="evenodd"
                                             d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
@@ -102,10 +110,15 @@
                     </x-dropdown>
                 </div>
             @else
-                <div class="hidden sm:flex sm:items-center sm:ms-6 space-x-4">
-                    <a href="{{ route('login') }}" class="text-gray-500 hover:text-gray-700">Login</a>
+                <div class="hidden sm:flex sm:items-center sm:ms-6 space-x-3">
+                    <a href="{{ route('login') }}" 
+                        class="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 rounded-lg hover:bg-gray-100 transition-all duration-200">
+                        Login
+                    </a>
                     <a href="{{ route('register') }}"
-                        class="background-belakang hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium">Register</a>
+                        class="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-purple-500 to-blue-600 rounded-lg hover:from-purple-600 hover:to-blue-700 shadow-md hover:shadow-lg transition-all duration-200">
+                        Register
+                    </a>
                 </div>
             @endauth
 
@@ -138,11 +151,8 @@
                     <x-responsive-nav-link href="{{ route('dashboard') }}" :active="request()->routeIs('dashboard') || request()->routeIs('user.dashboard')">
                         {{ __('Home') }}
                     </x-responsive-nav-link>
-                    <x-responsive-nav-link :href="route('user.family.index')" :active="request()->routeIs('user.family.*')" class="flex items-center">
+                    <x-responsive-nav-link :href="route('user.family.index')" :active="request()->routeIs('user.family.*') && !request()->routeIs('user.family.tree')" class="flex items-center">
                         {{ __('Diagram') }}
-                    </x-responsive-nav-link>
-                    <x-responsive-nav-link :href="route('user.family.tree')" :active="request()->routeIs('user.family.tree')" class="flex items-center">
-                        {{ __('Pohon Keluarga') }}
                     </x-responsive-nav-link>
                 @else
                     <x-responsive-nav-link :href="route('pending-approval')" :active="request()->routeIs('pending-approval')">

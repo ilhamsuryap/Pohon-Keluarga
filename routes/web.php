@@ -61,11 +61,15 @@ Route::middleware(['auth', 'admin'])
         Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
         Route::get('/users', [AdminController::class, 'users'])->name('users');
         Route::post('/users/{user}/approve', [AdminController::class, 'approveUser'])->name('users.approve');
-        Route::post('/users/{user}/confirm-payment', [AdminController::class, 'confirmPayment'])->name('users.confirm-payment');
         Route::post('/users/{user}/reject-payment', [AdminController::class, 'rejectPayment'])->name('users.reject-payment');
 
         Route::get('/payment-settings', [AdminController::class, 'paymentSettings'])->name('payment-settings');
         Route::post('/payment-settings', [AdminController::class, 'updatePaymentSettings'])->name('payment-settings.update');
+
+        Route::get('/config-settings', [AdminController::class, 'configSettings'])->name('config-settings');
+        Route::post('/config-settings', [AdminController::class, 'updateConfigSettings'])->name('config-settings.update');
+
+        Route::get('/profile', [AdminController::class, 'profile'])->name('profile');
     });
 
 // ----------------------
@@ -115,6 +119,9 @@ Route::middleware(['auth', 'approved'])
         // NIK-based Family Connection Routes
         Route::get('/family/{family}/members/{member}/suggestions', [FamilyController::class, 'getFamilySuggestions'])->name('family.members.suggestions');
         Route::post('/family/{family}/members/{member}/connect', [FamilyController::class, 'connectFamily'])->name('family.members.connect');
+        
+        // Get next child order for parent
+        Route::get('/family/{family}/members/{parent}/next-child-order', [FamilyController::class, 'getNextChildOrder'])->name('family.members.next-child-order');
 
         // Pohon Keluarga (Tree) Route
         Route::get('/family-tree', [UserController::class, 'familyTree'])->name('family.tree');

@@ -153,17 +153,40 @@ class FamilyController extends Controller
             if ($request->relation === 'child') {
                 if ($request->filled('parent_id')) {
                     $memberData['parent_id'] = $request->parent_id;
-                }
-                if ($request->filled('child_order')) {
-                    $memberData['child_order'] = $request->child_order;
+                    
+                    // Auto-calculate child_order if not provided
+                    if (!$request->filled('child_order')) {
+                        $maxOrder = FamilyMember::where('parent_id', $request->parent_id)
+                            ->max('child_order');
+                        $totalChildren = FamilyMember::where('parent_id', $request->parent_id)
+                            ->count();
+                        $memberData['child_order'] = ($maxOrder === null) ? 1 : ($maxOrder + 1);
+                        // Ensure we use the higher value between max+1 and total+1
+                        $memberData['child_order'] = max($memberData['child_order'], $totalChildren + 1);
+                    } else {
+                        $memberData['child_order'] = $request->child_order;
+                    }
                 }
             }
 
             $member = FamilyMember::create($memberData);
 
+            // Check if newly added member's NIK matches with other families
+            $hasMatchingNik = false;
+            if ($request->filled('nik') && strlen($request->nik) === 16) {
+                $hasMatchingNik = FamilyMember::where('nik', $request->nik)
+                    ->where('family_id', '!=', $family->id)
+                    ->exists();
+            }
+
+            $message = 'Anggota keluarga berhasil ditambahkan';
+            if ($hasMatchingNik) {
+                $message .= '. Fitur Pohon Keluarga sekarang tersedia!';
+            }
+
             return redirect()
                 ->route('user.family.show', $family)
-                ->with('success', 'Anggota keluarga berhasil ditambahkan');
+                ->with('success', $message);
         } catch (\Exception $e) {
             // Delete uploaded photo if member creation fails
             if ($photoPath) {
@@ -261,7 +284,45 @@ class FamilyController extends Controller
             ->orderBy('relation')
             ->get();
 
-        return view('user.family.show', compact('family', 'familyMembers'));
+        // Check if there are any NIK that match with other families (exact match)
+        $hasConnectedFamily = false;
+        $connectedFamilyInfo = null;
+        
+        if ($familyMembers->isNotEmpty()) {
+            // Get all NIKs from current family members (not null and valid 16 digits)
+            $niks = $familyMembers
+                ->filter(function($member) {
+                    return !empty($member->nik) && strlen($member->nik) === 16;
+                })
+                ->pluck('nik')
+                ->unique()
+                ->values();
+            
+            if ($niks->isNotEmpty()) {
+                // Check if any NIK exists in other families (exact match)
+                $matchingMembers = FamilyMember::whereIn('nik', $niks)
+                    ->where('family_id', '!=', $family->id)
+                    ->with('family')
+                    ->get();
+                
+                if ($matchingMembers->isNotEmpty()) {
+                    $hasConnectedFamily = true;
+                    
+                    // Get unique connected family IDs
+                    $connectedFamilyIds = $matchingMembers->pluck('family_id')->unique();
+                    $connectedFamilyCount = $connectedFamilyIds->count();
+                    $matchingNikCount = $matchingMembers->pluck('nik')->unique()->count();
+                    
+                    $connectedFamilyInfo = [
+                        'connected_families_count' => $connectedFamilyCount,
+                        'matching_nik_count' => $matchingNikCount,
+                        'message' => "Terdapat {$matchingNikCount} NIK yang sama dengan {$connectedFamilyCount} keluarga lain"
+                    ];
+                }
+            }
+        }
+
+        return view('user.family.show', compact('family', 'familyMembers', 'hasConnectedFamily', 'connectedFamilyInfo'));
     }
 
     public function edit(Family $family, FamilyMember $member)
@@ -386,6 +447,37 @@ class FamilyController extends Controller
         return redirect()
             ->route('user.family.show', $family)
             ->with('success', 'Anggota keluarga berhasil dihapus');
+    }
+
+    /**
+     * Get next child order for a parent
+     */
+    public function getNextChildOrder(Family $family, FamilyMember $parent)
+    {
+        // Ensure user has access to this family
+        if ($family->user_id !== auth()->id()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        // Ensure parent belongs to this family and is a mother
+        if ($parent->family_id !== $family->id || $parent->relation !== 'mother') {
+            abort(404, 'Parent not found or is not a mother.');
+        }
+
+        // Get the maximum child_order for this parent
+        $maxOrder = FamilyMember::where('parent_id', $parent->id)
+            ->max('child_order');
+
+        // If no children exist, return 1, otherwise return max + 1
+        $nextOrder = ($maxOrder === null) ? 1 : ($maxOrder + 1);
+
+        // Also count total children to ensure we're accurate
+        $totalChildren = FamilyMember::where('parent_id', $parent->id)->count();
+
+        // Return the next order (which should be total + 1)
+        return response()->json([
+            'next_order' => max($nextOrder, $totalChildren + 1)
+        ]);
     }
 
     /**

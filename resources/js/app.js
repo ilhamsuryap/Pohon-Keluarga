@@ -1,6 +1,6 @@
 import './bootstrap';
 import Alpine from 'alpinejs';
-import './familyTree';
+import { FamilyTree, transformToHierarchy } from './familyTree';
 
 window.Alpine = Alpine;
 Alpine.start();

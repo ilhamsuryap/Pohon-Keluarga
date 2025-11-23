@@ -1,11 +1,11 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="py-12">
+    <div class="py-12 bg-gradient-to-br from-purple-50/80 via-blue-50/80 to-indigo-50/80 min-h-screen">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900">
-                    <h2 class="text-2xl font-semibold mb-6">Edit Perusahaan</h2>
+            <div class="bg-white/80 backdrop-blur-sm overflow-hidden shadow-2xl rounded-3xl border border-white/20">
+                <div class="p-6 sm:p-8 text-gray-900">
+                    <h2 class="text-3xl font-bold mb-6 bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 bg-clip-text text-transparent">Edit Perusahaan</h2>
 
                     <form action="{{ route('user.company.update', $company) }}" method="POST">
                         @csrf
@@ -51,11 +51,11 @@
 
                             <div class="flex items-center justify-end space-x-3">
                                 <a href="{{ route('user.company.show', $company) }}"
-                                    class="inline-flex items-center px-4 py-2 bg-gray-200 border border-transparent rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-300 focus:bg-gray-300 active:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                                    class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-gray-300 to-gray-400 hover:from-gray-400 hover:to-gray-500 border border-transparent rounded-xl font-medium text-sm text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all">
                                     Batal
                                 </a>
                                 <button type="submit"
-                                    class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                                    class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-400 to-emerald-500 hover:from-green-500 hover:to-emerald-600 border border-transparent rounded-xl font-medium text-sm text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all">
                                     Simpan Perubahan
                                 </button>
                             </div>
