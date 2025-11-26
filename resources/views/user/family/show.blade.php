@@ -78,6 +78,7 @@
                 </div>
                 <!-- Right: Quick Actions -->
                 <div class="flex items-center justify-end space-x-3" x-data="{ exportOpen: false }">
+                    @if(!isset($readonly) || !$readonly)
                     <a href="{{ route('user.family.edit', $family) }}"
                         class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-all shadow-sm hover:shadow-md">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -85,6 +86,7 @@
                         </svg>
                         Edit
                     </a>
+                    @endif
                     
                     <!-- Export Dropdown -->
                     <div class="relative" @click.away="exportOpen = false">
@@ -591,15 +593,18 @@
                         const container = document.getElementById('family-tree-container');
 
                         if (!members || members.length === 0) {
+                            const isReadonly = {{ isset($readonly) && $readonly ? 'true' : 'false' }};
                             container.innerHTML = `
                                 <div class="empty-state">
+                                    ${!isReadonly ? `
                                     <button onclick="openAddModal()" 
                                         class="w-20 h-20 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white rounded-full shadow-2xl hover:shadow-3xl transition-all duration-200 transform hover:scale-110 flex items-center justify-center text-4xl font-light"
                                         title="Tambah Anggota Pertama">
                                         +
                                     </button>
+                                    ` : ''}
                                     <h3 class="text-xl font-semibold mt-6 text-gray-700">Belum Ada Anggota Keluarga</h3>
-                                    <p class="mt-2 text-gray-500">Klik tombol + untuk menambahkan anggota pertama</p>
+                                    ${!isReadonly ? '<p class="mt-2 text-gray-500">Klik tombol + untuk menambahkan anggota pertama</p>' : '<p class="mt-2 text-gray-500">Belum ada anggota keluarga yang ditampilkan</p>'}
                                 </div>
                             `;
                             return;
@@ -893,6 +898,9 @@
                                             </button>
                                 `;
                                 
+                                const isReadonly = {{ isset($readonly) && $readonly ? 'true' : 'false' }};
+                                
+                                if (!isReadonly) {
                                 if (memberData.relation === 'father') {
                                     html += `<button class="action-button add action-button-top-right" onclick="openAddModal()" title="Tambah Anggota">+</button>`;
                                 }
@@ -904,6 +912,10 @@
                                             <button class="action-button delete action-button-bottom-left" onclick="handleDeleteMember('${memberId}', '${familyId}')" title="Hapus">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                             </button>
+                                    `;
+                                }
+                                
+                                html += `
                                         </div>
                                         <div class="family-member-photo">
                                             <img src="${photoUrl}" alt="${memberName}" style="width: 100%; height: 100%; object-fit: cover;">
@@ -1729,9 +1741,11 @@
                                     class="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
                                     Tutup
                                 </button>
+                                @if(!isset($readonly) || !$readonly)
                                 <button type="button" id="detail-edit-btn" class="flex-1 btn-primary text-white">
                                     Edit Informasi
                                 </button>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -1797,6 +1811,8 @@
 
                     // Set up edit button
                     const editBtn = document.getElementById('detail-edit-btn');
+                    const isReadonly = {{ isset($readonly) && $readonly ? 'true' : 'false' }};
+                    if (editBtn && !isReadonly) {
                     editBtn.onclick = () => {
                         closeDetailModal();
                         // Trigger edit modal
@@ -1835,6 +1851,7 @@
 
                         document.getElementById('editModal').classList.remove('hidden');
                     };
+                    }
 
                     // Show modal
                     document.getElementById('detailModal').classList.remove('hidden');

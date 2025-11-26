@@ -50,6 +50,7 @@
                 </div>
                 <!-- Quick Actions -->
                 <div class="flex items-center space-x-3" x-data="{ exportOpen: false }">
+                    @if(!isset($readonly) || !$readonly)
                     <a href="{{ route('user.company.edit', $company) }}"
                         class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-all shadow-sm hover:shadow-md">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -57,6 +58,7 @@
                         </svg>
                         Edit
                     </a>
+                    @endif
                     
                     <!-- Export Dropdown -->
                     <div class="relative" @click.away="exportOpen = false">
@@ -424,7 +426,8 @@
 
                         // Set up edit button
                         const editBtn = document.getElementById('company-detail-edit-btn');
-                        if (editBtn) {
+                        const isReadonly = {{ isset($readonly) && $readonly ? 'true' : 'false' }};
+                        if (editBtn && !isReadonly) {
                             editBtn.onclick = () => {
                                 window.closeCompanyDetailModal();
                                 window.openEditCompanyModal(member.id);
@@ -522,14 +525,17 @@
                         const container = document.getElementById('family-tree-container');
 
                         if (!members || members.length === 0) {
+                            const isReadonly = {{ isset($readonly) && $readonly ? 'true' : 'false' }};
                             container.innerHTML = `
                                 <div class="empty-state flex flex-col items-center justify-center h-full">
+                                    ${!isReadonly ? `
                                     <button onclick="document.getElementById('addCompanyModal').classList.remove('hidden')"
                                         class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white rounded-full shadow-2xl hover:shadow-3xl transition-all duration-200 transform hover:scale-110 text-4xl font-bold">
                                         +
                                     </button>
+                                    ` : ''}
                                     <h3 class="text-xl font-semibold mb-2 mt-4">Belum Ada Anggota Perusahaan</h3>
-                                    <p class="mb-6">Mulai membangun struktur perusahaan Anda dengan menambahkan anggota pertama</p>
+                                    ${!isReadonly ? '<p class="mb-6">Mulai membangun struktur perusahaan Anda dengan menambahkan anggota pertama</p>' : '<p class="mb-6">Belum ada anggota perusahaan yang ditampilkan</p>'}
                                 </div>
                             `;
                             return;
@@ -657,6 +663,12 @@
                                             <button class="action-button view action-button-top-left" onclick="showCompanyMemberDetail(${memberJson})" title="Lihat Detail">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                             </button>
+                                `;
+                                
+                                const isReadonly = {{ isset($readonly) && $readonly ? 'true' : 'false' }};
+                                
+                                if (!isReadonly) {
+                                    html += `
                                             <button class="action-button add action-button-top-right" onclick="openAddChildModal(${memberId})" title="Tambah Child">+</button>
                                             <button class="action-button edit action-button-bottom-right" onclick="openEditCompanyModal(${memberId})" title="Edit">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
@@ -664,6 +676,10 @@
                                             <button class="action-button delete action-button-bottom-left" onclick="handleDeleteCompanyMember(${memberId}, ${companyId})" title="Hapus">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                             </button>
+                                    `;
+                                }
+                                
+                                html += `
                                         </div>
                                         <div class="family-member-photo" style="width: 140px; height: 140px; border-radius: 20px; overflow: hidden; margin: 0 auto 10px; background: linear-gradient(145deg, #f1f5f9, #e2e8f0); border: 4px solid #fff; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); position: relative;">
                                             <img src="${photoUrl}" alt="${memberName}" style="width: 100%; height: 100%; object-fit: cover;">
@@ -1108,9 +1124,11 @@
                                     class="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
                                     Tutup
                                 </button>
+                                @if(!isset($readonly) || !$readonly)
                                 <button type="button" id="company-detail-edit-btn" class="flex-1 btn-primary text-white">
                                     Edit Informasi
                                 </button>
+                                @endif
                             </div>
                         </div>
                     </div>
